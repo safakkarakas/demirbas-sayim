@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Demirbaş Sayımı</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --accent: #4f8ef7;
+    --accent2: #2de8a2;
+    --danger: #f74f6a;
+    --warn: #f7c44f;
+    --text: #eef0f8;
+    --text2: #7a82a8;
+    --border: rgba(255,255,255,0.07);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 3rem;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1.1rem 1.25rem 0.9rem;
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 18px; font-weight: 700; }
+  header p { font-size: 11px; color: var(--text2); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+  .stats-bar { display: flex; gap: 8px; padding: 1rem 1.25rem 0; }
+  .stat { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 10px; text-align: center; }
+  .stat .num { font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .stat.green .num { color: var(--accent2); }
+  .stat .lbl { font-size: 10px; color: var(--text2); margin-top: 3px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.07em; }
+
+  /* ADIM GÖSTERGESİ */
+  .steps { display: flex; gap: 6px; padding: 1rem 1.25rem 0; }
+  .step {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: var(--surface2);
+    transition: background 0.3s;
+  }
+  .step.done { background: var(--accent2); }
+  .step.active { background: var(--accent); }
+
+  .section { padding: 0.75rem 1.25rem 0; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.1rem; margin-bottom: 0.75rem;
+    transition: opacity 0.3s;
+  }
+  .card.dimmed { opacity: 0.38; pointer-events: none; }
+
+  .card-label {
+    font-size: 10px; color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    margin-bottom: 10px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-label .check {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent2); color: #0f1117;
+    font-size: 10px; font-weight: 700;
+    display: none; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .card-label .check.show { display: flex; }
+
+  /* FOTOĞRAF ZONE */
+  .photo-zone {
+    background: var(--surface2);
+    border: 1.5px dashed rgba(79,142,247,0.3);
+    border-radius: var(--radius-sm); min-height: 150px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .photo-zone.accent2-border { border-color: rgba(45,232,162,0.35); }
+  .photo-zone:active { opacity: 0.85; }
+  .photo-zone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .ph { text-align: center; pointer-events: none; z-index: 1; }
+  .ph-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+  .ph-text { font-size: 13px; color: var(--text2); }
+  .ph-sub { font-size: 11px; color: var(--text2); opacity: 0.5; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+  .photo-badge {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,0.72); border-radius: 6px;
+    padding: 3px 9px; font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .photo-badge.blue { color: var(--accent); }
+  .photo-badge.green { color: var(--accent2); }
+
+  /* BARKOD SONUÇ */
+  .bc-result {
+    display: none; margin-top: 10px;
+    background: rgba(45,232,162,0.08);
+    border: 1.5px solid rgba(45,232,162,0.25);
+    border-radius: var(--radius-sm);
+    padding: 11px 13px;
+    align-items: center; gap: 10px;
+  }
+  .bc-result.show { display: flex; }
+  .bc-val {
+    flex: 1; font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; font-weight: 600; color: var(--accent2);
+    word-break: break-all;
+  }
+  .bc-retry {
+    background: none; border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 10px;
+    color: var(--text2); font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer; flex-shrink: 0; white-space: nowrap;
+  }
+  .bc-retry:active { background: var(--surface2); }
+
+  /* PROCESSING */
+  .processing {
+    display: none; text-align: center; padding: 10px;
+    font-size: 12px; color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .processing.show { display: block; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+  /* MANUEL */
+  .manual-toggle {
+    width: 100%; background: none;
+    border: 1px dashed rgba(122,130,168,0.22);
+    border-radius: var(--radius-sm); padding: 9px;
+    color: var(--text2); font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer; margin-top: 10px; text-align: center;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .manual-toggle:active { border-color: var(--accent); color: var(--accent); }
+  .manual-wrap { display: none; margin-top: 10px; }
+  .manual-wrap.show { display: block; }
+
+  input[type="text"] {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 14px; font-size: 16px;
+    color: var(--text); font-family: 'Syne', sans-serif; outline: none;
+    transition: border-color 0.2s; -webkit-appearance: none;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--text2); }
+
+  /* FOTOĞRAF ADI */
+  .photo-fname {
+    margin-top: 8px; font-size: 11px; color: var(--accent2);
+    font-family: 'JetBrains Mono', monospace; word-break: break-all; line-height: 1.5;
+  }
+
+  /* UYARI */
+  .warn-box {
+    background: rgba(247,196,79,0.07); border: 1px solid rgba(247,196,79,0.18);
+    border-radius: var(--radius-sm); padding: 9px 11px;
+    font-size: 11px; color: var(--warn);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 10px; line-height: 1.65;
+  }
+
+  /* API UYARISI */
+  .api-note {
+    background: rgba(79,142,247,0.06); border: 1px solid rgba(79,142,247,0.15);
+    border-radius: var(--radius-sm); padding: 9px 11px;
+    font-size: 11px; color: var(--text2);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 10px; line-height: 1.65; display: none;
+  }
+  .api-note.show { display: block; }
+
+  /* BUTONLAR */
+  .save-btn {
+    width: 100%; padding: 15px;
+    background: var(--accent2); border: none;
+    border-radius: var(--radius); color: #0f1117;
+    font-size: 16px; font-weight: 700;
+    font-family: 'Syne', sans-serif; cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s; margin-bottom: 0.75rem;
+  }
+  .save-btn:active { transform: scale(0.98); opacity: 0.85; }
+  .save-btn:disabled { opacity: 0.28; }
+
+  .outline-btn {
+    width: 100%; padding: 13px; background: transparent;
+    border: 1.5px solid var(--accent); border-radius: var(--radius);
+    color: var(--accent); font-size: 14px; font-weight: 700;
+    font-family: 'Syne', sans-serif; cursor: pointer;
+    transition: background 0.15s; margin-bottom: 0.75rem;
+  }
+  .outline-btn:active { background: rgba(79,142,247,0.1); }
+  .outline-btn:disabled { opacity: 0.28; border-color: var(--text2); color: var(--text2); }
+
+  .danger-btn {
+    width: 100%; padding: 12px; background: transparent;
+    border: 1px solid rgba(247,79,106,0.22); border-radius: var(--radius);
+    color: var(--danger); font-size: 13px; font-weight: 600;
+    font-family: 'Syne', sans-serif; cursor: pointer; opacity: 0.6;
+  }
+  .danger-btn:disabled { opacity: 0.18; }
+
+  /* KAYIT LİSTESİ */
+  .records-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 0.75rem;
+  }
+  .records-header {
+    padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .records-header span {
+    font-size: 10px; color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;
+  }
+
+  .record-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 1.1rem; border-bottom: 1px solid var(--border);
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+  .record-thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
+  .record-thumb-empty { width: 44px; height: 44px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .record-info { flex: 1; min-width: 0; }
+  .record-barcode { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .record-desc { font-size: 12px; color: var(--text2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .record-fname { font-size: 10px; color: var(--accent2); margin-top: 2px; font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .record-meta { font-size: 10px; color: var(--text2); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; text-align: right; line-height: 1.5; }
+  .del-btn { background: none; border: none; color: var(--danger); font-size: 22px; cursor: pointer; padding: 4px 6px; border-radius: 6px; flex-shrink: 0; opacity: 0.4; }
+  .del-btn:active { opacity: 1; }
+
+  .empty-state { padding: 2.5rem 1rem; text-align: center; color: var(--text2); font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .empty-icon { font-size: 30px; margin-bottom: 8px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 1.5rem; left: 50%;
+    transform: translateX(-50%) translateY(90px);
+    background: var(--accent2); color: #0f1117;
+    padding: 10px 22px; border-radius: 50px;
+    font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+    z-index: 999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none; max-width: 88vw;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.warn { background: var(--warn); color: #1a1200; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📦 Demirbaş Sayımı</h1>
+    <p id="header-date">—</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <div class="stat" style="padding:6px 12px;border-radius:var(--radius-sm);">
+      <div class="num" id="stat-total" style="font-size:18px;">0</div>
+      <div class="lbl">Kayıt</div>
+    </div>
+    <div class="stat green" style="padding:6px 12px;border-radius:var(--radius-sm);">
+      <div class="num" id="stat-photo" style="font-size:18px;">0</div>
+      <div class="lbl">Foto</div>
+    </div>
+  </div>
+</header>
+
+<!-- Adım göstergesi -->
+<div class="steps" id="steps-bar">
+  <div class="step active" id="step1-bar"></div>
+  <div class="step" id="step2-bar"></div>
+  <div class="step" id="step3-bar"></div>
+</div>
+
+<div class="section">
+
+  <!-- ── ADIM 1: BARKOD FOTOĞRAFI ── -->
+  <div class="card" id="card-barcode">
+    <div class="card-label">
+      <span>01 — Barkod</span>
+      <div class="check" id="check-barcode">✓</div>
+    </div>
+
+    <div class="api-note" id="api-note">
+      ℹ Bu tarayıcıda otomatik barkod okuma desteklenmiyor.<br>
+      Lütfen barkodu manuel olarak girin.
+    </div>
+
+    <div class="photo-zone" id="bc-zone"
+      onclick="document.getElementById('bc-file').click()">
+      <div class="ph" id="bc-ph">
+        <span class="ph-icon">🔍</span>
+        <div class="ph-text">Barkod etiketini fotoğrafla</div>
+        <div class="ph-sub">Dokunun</div>
+      </div>
+      <img id="bc-preview" src="" style="display:none;" />
+      <div class="photo-badge blue" id="bc-badge" style="display:none;">📷 Okunuyor...</div>
+    </div>
+    <input type="file" id="bc-file" accept="image/*"
+      capture="environment" style="display:none;"
+      onchange="handleBcPhoto(event)" />
+
+    <div class="processing" id="bc-processing">⏳ Barkod analiz ediliyor...</div>
+
+    <div class="bc-result" id="bc-result">
+      <div class="bc-val" id="bc-val">—</div>
+      <button class="bc-retry" onclick="resetBarcode()">Yeniden Çek</button>
+    </div>
+
+    <button class="manual-toggle" id="manual-toggle" onclick="toggleManual()">
+      ✏ Barkod okunamadı — Manuel gir
+    </button>
+    <div class="manual-wrap" id="manual-wrap">
+      <input type="text" id="bc-manual"
+        placeholder="Barkod numarasını yazın..."
+        autocomplete="off" inputmode="text"
+        oninput="onManualInput()" />
+    </div>
+  </div>
+
+  <!-- ── ADIM 2: EKİPMAN FOTOĞRAFI ── -->
+  <div class="card dimmed" id="card-photo">
+    <div class="card-label">
+      <span>02 — Ekipman Fotoğrafı</span>
+      <div class="check" id="check-photo">✓</div>
+    </div>
+
+    <div class="photo-zone accent2-border"
+      onclick="document.getElementById('eq-file').click()">
+      <div class="ph" id="eq-ph">
+        <span class="ph-icon">📷</span>
+        <div class="ph-text">Ekipmanı fotoğrafla</div>
+        <div class="ph-sub">Dokunun</div>
+      </div>
+      <img id="eq-preview" src="" style="display:none;" />
+      <div class="photo-badge green" id="eq-badge" style="display:none;">✓ Çekildi</div>
+    </div>
+    <div class="photo-fname" id="eq-fname"></div>
+    <input type="file" id="eq-file" accept="image/*"
+      capture="environment" style="display:none;"
+      onchange="handleEqPhoto(event)" />
+    <div class="warn-box">
+      ⚠ Fotoğraf çekince İndirilenler klasörüne otomatik kaydedilir.
+      CSV'de dosya adı görünür.
+    </div>
+  </div>
+
+  <!-- ── ADIM 3: AÇIKLAMA ── -->
+  <div class="card dimmed" id="card-desc">
+    <div class="card-label">03 — Açıklama (opsiyonel)</div>
+    <input type="text" id="desc-input"
+      placeholder="Malzeme adı, konum, not..."
+      autocomplete="off"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();saveRecord();}" />
+  </div>
+
+  <button class="save-btn" id="save-btn" onclick="saveRecord()" disabled>
+    ✓ Kaydet — Sonraki Ekipman
+  </button>
+  <button class="outline-btn" id="save-nophoto-btn" onclick="saveNoPhoto()" disabled>
+    Fotoğrafsız Kaydet
+  </button>
+
+  <!-- KAYIT LİSTESİ -->
+  <div class="records-card">
+    <div class="records-header">
+      <span>Kayıtlar</span>
+      <span id="rec-count">0 kayıt</span>
+    </div>
+    <div id="records-list">
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        Henüz kayıt eklenmedi
+      </div>
+    </div>
+  </div>
+
+  <button class="outline-btn" id="export-btn" onclick="exportCSV()" disabled>
+    ⬇ CSV İndir (Excel)
+  </button>
+  <button class="danger-btn" id="clear-btn" onclick="clearAll()" disabled>
+    Tüm Kayıtları Sil
+  </button>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────
+let records = [];
+let currentBarcode = '';
+let currentEqPhoto = null;
+let currentEqPhotoName = '';
+let manualVisible = false;
+let detector = null;
+
+// ── INIT ───────────────────────────────
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('tr-TR', {
+  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+});
+
+(async () => {
+  if ('BarcodeDetector' in window) {
+    try {
+      detector = new BarcodeDetector({
+        formats: ['ean_13','ean_8','code_128','code_39','code_93',
+                  'qr_code','data_matrix','upc_a','upc_e','itf','codabar','aztec','pdf417']
+      });
+    } catch(e) { detector = null; }
+  }
+  if (!detector) {
+    // API yok — barkod zone'u gizle, sadece manuel
+    document.getElementById('bc-zone').style.display = 'none';
+    document.getElementById('api-note').classList.add('show');
+    document.getElementById('manual-toggle').style.display = 'none';
+    showManual();
+  }
+})();
+
+// ── ADIM YÖNETİMİ ─────────────────────
+function updateSteps() {
+  const hasBarcode = !!currentBarcode;
+  const hasPhoto = !!currentEqPhoto;
+
+  // Adım çubuğu
+  document.getElementById('step1-bar').className = 'step ' + (hasBarcode ? 'done' : 'active');
+  document.getElementById('step2-bar').className = 'step ' + (hasPhoto ? 'done' : hasBarcode ? 'active' : '');
+  document.getElementById('step3-bar').className = 'step ' + (hasBarcode ? 'active' : '');
+
+  // Kartlar
+  document.getElementById('card-barcode').classList.toggle('dimmed', false);
+  document.getElementById('card-photo').classList.toggle('dimmed', !hasBarcode);
+  document.getElementById('card-desc').classList.toggle('dimmed', !hasBarcode);
+
+  // Check işaretleri
+  document.getElementById('check-barcode').classList.toggle('show', hasBarcode);
+  document.getElementById('check-photo').classList.toggle('show', hasPhoto);
+
+  // Butonlar
+  document.getElementById('save-btn').disabled = !hasBarcode;
+  document.getElementById('save-nophoto-btn').disabled = !hasBarcode;
+}
+
+// ── BARKOD FOTOĞRAFI ──────────────────
+async function handleBcPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const dataUrl = ev.target.result;
+
+    // Önizleme
+    document.getElementById('bc-preview').src = dataUrl;
+    document.getElementById('bc-preview').style.display = 'block';
+    document.getElementById('bc-ph').style.display = 'none';
+    document.getElementById('bc-badge').style.display = 'block';
+    document.getElementById('bc-badge').textContent = '⏳ Okunuyor...';
+    document.getElementById('bc-result').classList.remove('show');
+    document.getElementById('bc-processing').classList.add('show');
+
+    if (!detector) { document.getElementById('bc-processing').classList.remove('show'); showManual(); return; }
+
+    try {
+      const img = new Image();
+      img.onload = async () => {
+        try {
+          const results = await detector.detect(img);
+          document.getElementById('bc-processing').classList.remove('show');
+          if (results.length > 0) {
+            setBarcodeFound(results[0].rawValue);
+          } else {
+            document.getElementById('bc-badge').textContent = '⚠ Okunamadı';
+            showToast('Barkod okunamadı — manuel girin', true);
+            showManual();
+          }
+        } catch(err) {
+          document.getElementById('bc-processing').classList.remove('show');
+          document.getElementById('bc-badge').textContent = '⚠ Hata';
+          showManual();
+        }
+      };
+      img.src = dataUrl;
+    } catch(err) {
+      document.getElementById('bc-processing').classList.remove('show');
+      showManual();
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function setBarcodeFound(val) {
+  currentBarcode = val;
+  document.getElementById('bc-val').textContent = val;
+  document.getElementById('bc-result').classList.add('show');
+  document.getElementById('bc-badge').textContent = '✓ Okundu';
+  document.getElementById('manual-toggle').style.display = 'none';
+  document.getElementById('manual-wrap').classList.remove('show');
+  if (navigator.vibrate) navigator.vibrate(80);
+  showToast('✓ Barkod: ' + val);
+  updateSteps();
+}
+
+function resetBarcode() {
+  currentBarcode = '';
+  document.getElementById('bc-preview').style.display = 'none';
+  document.getElementById('bc-preview').src = '';
+  document.getElementById('bc-ph').style.display = 'flex';
+  document.getElementById('bc-badge').style.display = 'none';
+  document.getElementById('bc-result').classList.remove('show');
+  document.getElementById('bc-file').value = '';
+  document.getElementById('bc-manual').value = '';
+  if (detector) {
+    document.getElementById('manual-toggle').style.display = 'block';
+    document.getElementById('manual-toggle').textContent = '✏ Barkod okunamadı — Manuel gir';
+  }
+  document.getElementById('manual-wrap').classList.remove('show');
+  manualVisible = false;
+  updateSteps();
+}
+
+function toggleManual() {
+  manualVisible = !manualVisible;
+  document.getElementById('manual-wrap').classList.toggle('show', manualVisible);
+  document.getElementById('manual-toggle').textContent = manualVisible
+    ? '✕ Manuel girişi kapat'
+    : '✏ Barkod okunamadı — Manuel gir';
+  if (manualVisible) setTimeout(() => document.getElementById('bc-manual').focus(), 100);
+}
+
+function showManual() {
+  manualVisible = true;
+  document.getElementById('manual-wrap').classList.add('show');
+  document.getElementById('manual-toggle').textContent = '✕ Manuel girişi kapat';
+  setTimeout(() => document.getElementById('bc-manual').focus(), 100);
+}
+
+function onManualInput() {
+  const val = document.getElementById('bc-manual').value.trim();
+  currentBarcode = val;
+  document.getElementById('bc-result').classList.toggle('show', val.length > 0);
+  if (val.length > 0) {
+    document.getElementById('bc-val').textContent = val;
+  }
+  updateSteps();
+}
+
+// ── EKİPMAN FOTOĞRAFI ─────────────────
+function handleEqPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const now = new Date();
+  const ts = now.toLocaleDateString('tr-TR').replace(/\./g, '-') + '_' +
+             now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit', second:'2-digit' }).replace(/:/g, '-');
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const safeBc = currentBarcode.replace(/[^a-zA-Z0-9_-]/g, '_');
+  currentEqPhotoName = (safeBc || 'foto') + '_' + ts + '.' + ext;
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentEqPhoto = ev.target.result;
+    document.getElementById('eq-preview').src = currentEqPhoto;
+    document.getElementById('eq-preview').style.display = 'block';
+    document.getElementById('eq-ph').style.display = 'none';
+    document.getElementById('eq-badge').style.display = 'block';
+    document.getElementById('eq-fname').textContent = '💾 ' + currentEqPhotoName;
+    autoDownload(currentEqPhoto, currentEqPhotoName);
+    showToast('📥 ' + currentEqPhotoName, false, 3000);
+    updateSteps();
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── KAYDET ────────────────────────────
+function doSave(withPhoto) {
+  if (!currentBarcode) { showToast('⚠ Barkod gerekli!', true); return; }
+  const desc = document.getElementById('desc-input').value.trim();
+  const now = new Date();
+  records.unshift({
+    id: Date.now(),
+    barcode: currentBarcode,
+    desc,
+    photo: withPhoto ? currentEqPhoto : null,
+    photoName: withPhoto ? currentEqPhotoName : '',
+    time: now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit', second:'2-digit' }),
+    date: now.toLocaleDateString('tr-TR')
+  });
+  render();
+  resetForm();
+  showToast('✓ Kayıt eklendi — Sonraki ekipman');
+}
+
+function saveRecord() { doSave(true); }
+function saveNoPhoto() { doSave(false); }
+
+function resetForm() {
+  currentBarcode = '';
+  currentEqPhoto = null;
+  currentEqPhotoName = '';
+  manualVisible = false;
+
+  // Barkod
+  document.getElementById('bc-preview').style.display = 'none';
+  document.getElementById('bc-preview').src = '';
+  document.getElementById('bc-ph').style.display = 'flex';
+  document.getElementById('bc-badge').style.display = 'none';
+  document.getElementById('bc-result').classList.remove('show');
+  document.getElementById('bc-file').value = '';
+  document.getElementById('bc-manual').value = '';
+  if (detector) {
+    document.getElementById('bc-zone').style.display = 'flex';
+    document.getElementById('manual-toggle').style.display = 'block';
+    document.getElementById('manual-toggle').textContent = '✏ Barkod okunamadı — Manuel gir';
+  }
+  document.getElementById('manual-wrap').classList.remove('show');
+
+  // Ekipman
+  document.getElementById('eq-preview').style.display = 'none';
+  document.getElementById('eq-preview').src = '';
+  document.getElementById('eq-ph').style.display = 'flex';
+  document.getElementById('eq-badge').style.display = 'none';
+  document.getElementById('eq-fname').textContent = '';
+  document.getElementById('eq-file').value = '';
+
+  // Açıklama
+  document.getElementById('desc-input').value = '';
+
+  updateSteps();
+}
+
+// ── SİL ───────────────────────────────
+function deleteRecord(id) {
+  if (!confirm('Bu kaydı silmek istiyor musunuz?')) return;
+  records = records.filter(r => r.id !== id);
+  render();
+}
+function clearAll() {
+  if (!confirm('Tüm kayıtlar silinecek. Emin misiniz?')) return;
+  records = []; render();
+}
+
+// ── RENDER ────────────────────────────
+function render() {
+  const withPhoto = records.filter(r => r.photo).length;
+  document.getElementById('stat-total').textContent = records.length;
+  document.getElementById('stat-photo').textContent = withPhoto;
+  document.getElementById('rec-count').textContent = records.length + ' kayıt';
+  document.getElementById('export-btn').disabled = records.length === 0;
+  document.getElementById('clear-btn').disabled = records.length === 0;
+
+  const list = document.getElementById('records-list');
+  if (!records.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Henüz kayıt eklenmedi</div>';
+    return;
+  }
+  list.innerHTML = records.map(r => `
+    <div class="record-item">
+      ${r.photo
+        ? `<img class="record-thumb" src="${r.photo}" />`
+        : `<div class="record-thumb-empty">📦</div>`}
+      <div class="record-info">
+        <div class="record-barcode">${esc(r.barcode)}</div>
+        <div class="record-desc">${r.desc ? esc(r.desc) : '<span style="opacity:0.3">—</span>'}</div>
+        ${r.photoName ? `<div class="record-fname">📎 ${esc(r.photoName)}</div>` : ''}
+      </div>
+      <div class="record-meta">${r.time}<br><span style="opacity:0.4">${r.date}</span></div>
+      <button class="del-btn" onclick="deleteRecord(${r.id})">×</button>
+    </div>
+  `).join('');
+}
+
+// ── CSV ───────────────────────────────
+function exportCSV() {
+  if (!records.length) return;
+  const BOM = '\uFEFF';
+  const cols = ['Sıra','Barkod','Açıklama','Fotoğraf Dosyası','Fotoğraf Var mı','Tarih','Saat'];
+  const rows = [...records].reverse().map((r, i) => [
+    i+1, r.barcode, r.desc||'', r.photoName||'', r.photo?'Evet':'Hayır', r.date, r.time
+  ]);
+  const csv = [cols,...rows].map(row =>
+    row.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')
+  ).join('\r\n');
+  const blob = new Blob([BOM+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'demirbaş_' + new Date().toLocaleDateString('tr-TR').replace(/\./g,'-') + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('✓ CSV indirildi');
+}
+
+// ── YARDIMCI ──────────────────────────
+function autoDownload(dataUrl, filename) {
+  const a = document.createElement('a');
+  a.href = dataUrl; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function showToast(msg, warn, dur) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (warn ? ' warn' : '');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), dur||2600);
+}
+
+render();
+updateSteps();
+</script>
+</body>
+</html>
