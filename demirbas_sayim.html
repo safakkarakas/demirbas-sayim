@@ -164,8 +164,9 @@
   .danger-btn { width: 100%; padding: 12px; background: transparent; border: 1px solid rgba(247,79,106,0.22); border-radius: var(--radius); color: var(--danger); font-size: 13px; font-weight: 600; font-family: 'Syne', sans-serif; cursor: pointer; opacity: 0.6; }
   .danger-btn:disabled { opacity: 0.18; }
 
-  .dl-btn { width: 100%; padding: 12px; background: rgba(45,232,162,0.1); border: 1.5px solid rgba(45,232,162,0.4); border-radius: var(--radius-sm); color: var(--accent2); font-size: 14px; font-weight: 700; font-family: 'Syne', sans-serif; cursor: pointer; margin-top: 10px; transition: background 0.15s; }
-  .dl-btn:active { background: rgba(45,232,162,0.2); }
+  .dl-btn { width: 100%; padding: 15px; background: var(--accent2); border: none; border-radius: var(--radius); color: #0f1117; font-size: 16px; font-weight: 700; font-family: 'Syne', sans-serif; cursor: pointer; margin-bottom: 0.75rem; transition: opacity 0.15s, transform 0.1s; }
+  .dl-btn:active { transform: scale(0.98); opacity: 0.85; }
+  .dl-btn.done { background: var(--surface2); border: 1.5px solid var(--accent2); color: var(--accent2); }
 
   .records-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 0.75rem; }
   .records-header { padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
@@ -195,7 +196,7 @@
 
 <header>
   <div>
-    <h1>📦 Demirbaş Sayımı 9</h1>
+    <h1>📦 Demirbaş Sayımı 10</h1>
     <p id="header-date">—</p>
   </div>
   <div style="display:flex;gap:8px;">
@@ -266,13 +267,12 @@
     </div>
     <div class="photo-fname" id="eq-fname"></div>
     <input type="file" id="eq-file" accept="image/*" capture="environment" style="display:none;" onchange="handleEqPhoto(event)" />
-    <button class="dl-btn" id="dl-btn" onclick="downloadCurrentPhoto()" style="display:none;">
-      ⬇ Fotoğrafı Kaydet (İndir)
-    </button>
-    <div class="warn-box" id="eq-warn-box">
-      ⚠ Fotoğraf çektikten sonra mutlaka "Fotoğrafı Kaydet" butonuna basın. CSV'de dosya adı görünür.
-    </div>
   </div>
+
+  <!-- FOTOĞRAF KAYDET BUTONU — fotoğraf çekince belirir -->
+  <button class="dl-btn" id="dl-btn" onclick="downloadCurrentPhoto()" style="display:none;">
+    ⬇ Fotoğrafı Kaydet
+  </button>
 
   <!-- AÇIKLAMA -->
   <div class="card dimmed" id="card-desc">
@@ -282,7 +282,6 @@
   </div>
 
   <button class="save-btn" id="save-btn" onclick="saveRecord()" disabled>✓ Kaydet — Sonraki Ekipman</button>
-  <button class="outline-btn" id="save-nophoto-btn" onclick="saveNoPhoto()" disabled>Fotoğrafsız Kaydet</button>
 
   <!-- DEPOLAMA DURUMU -->
   <div class="storage-bar" id="storage-bar" style="display:none;">
@@ -321,6 +320,7 @@ let currentEqPhoto = null;      // tam boyut (indirmek için)
 let currentEqThumb = null;      // küçük önizleme (localStorage için)
 let currentEqPhotoName = '';
 let manualVisible = false;
+let photoSaved = true;          // fotoğraf kaydedildi mi (yoksa kaydet butonu kilitli)
 let detector = null;
 
 // ── INIT ───────────────────────────────
@@ -401,15 +401,15 @@ function updateStorageBar() {
 function updateSteps() {
   const hasBarcode = !!currentBarcode;
   const hasPhoto = !!currentEqPhoto;
+  const canSave = hasBarcode && (photoSaved);
   document.getElementById('step1-bar').className = 'step ' + (hasBarcode ? 'done' : 'active');
   document.getElementById('step2-bar').className = 'step ' + (hasPhoto ? 'done' : hasBarcode ? 'active' : '');
   document.getElementById('step3-bar').className = 'step ' + (hasBarcode ? 'active' : '');
   document.getElementById('card-photo').classList.toggle('dimmed', !hasBarcode);
   document.getElementById('card-desc').classList.toggle('dimmed', !hasBarcode);
   document.getElementById('check-barcode').classList.toggle('show', hasBarcode);
-  document.getElementById('check-photo').classList.toggle('show', hasPhoto);
-  document.getElementById('save-btn').disabled = !hasBarcode;
-  document.getElementById('save-nophoto-btn').disabled = !hasBarcode;
+  document.getElementById('check-photo').classList.toggle('show', hasPhoto && photoSaved);
+  document.getElementById('save-btn').disabled = !canSave;
 }
 
 // ── BARKOD ─────────────────────────────
@@ -519,19 +519,20 @@ function handleEqPhoto(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     currentEqPhoto = ev.target.result;
-    makeThumb(currentEqPhoto, MAX_THUMB_SIZE, thumb => {
-      currentEqThumb = thumb;
-    });
+    makeThumb(currentEqPhoto, MAX_THUMB_SIZE, thumb => { currentEqThumb = thumb; });
     document.getElementById('eq-preview').src = currentEqPhoto;
     document.getElementById('eq-preview').style.display = 'block';
     document.getElementById('eq-ph').style.display = 'none';
     document.getElementById('eq-badge').style.display = 'block';
     document.getElementById('eq-fname').textContent = '📎 ' + currentEqPhotoName;
-    // Manuel indirme butonu göster
-    document.getElementById('dl-btn').style.display = 'block';
-    document.getElementById('dl-btn').textContent = '⬇ Fotoğrafı Kaydet — ' + currentEqPhotoName;
-    showToast('Fotoğraf hazır — kaydet butonuna basın', false, 3000);
+    // Fotoğraf Kaydet butonunu göster, Kaydet'i kilitle
+    const dlBtn = document.getElementById('dl-btn');
+    dlBtn.style.display = 'block';
+    dlBtn.className = 'dl-btn';
+    dlBtn.textContent = '⬇ Fotoğrafı Kaydet';
+    photoSaved = false;
     updateSteps();
+    showToast('Önce fotoğrafı kaydedin!', true, 2500);
   };
   reader.readAsDataURL(file);
 }
@@ -539,10 +540,12 @@ function handleEqPhoto(e) {
 function downloadCurrentPhoto() {
   if (!currentEqPhoto || !currentEqPhotoName) return;
   autoDownload(currentEqPhoto, currentEqPhotoName);
-  const btn = document.getElementById('dl-btn');
-  btn.textContent = '✓ Kaydedildi — ' + currentEqPhotoName;
-  btn.style.opacity = '0.6';
-  showToast('📥 ' + currentEqPhotoName, false, 3000);
+  photoSaved = true;
+  const dlBtn = document.getElementById('dl-btn');
+  dlBtn.className = 'dl-btn done';
+  dlBtn.textContent = '✓ Fotoğraf Kaydedildi — ' + currentEqPhotoName;
+  updateSteps();
+  showToast('📥 Kaydedildi', false, 2000);
 }
 
 function makeThumb(dataUrl, maxSize, callback) {
@@ -598,7 +601,8 @@ function resetForm() {
   document.getElementById('eq-fname').textContent = '';
   document.getElementById('eq-file').value = '';
   document.getElementById('dl-btn').style.display = 'none';
-  document.getElementById('dl-btn').style.opacity = '1';
+  document.getElementById('dl-btn').className = 'dl-btn';
+  photoSaved = true;
   document.getElementById('desc-input').value = '';
   updateSteps();
 }
