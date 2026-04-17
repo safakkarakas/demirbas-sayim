@@ -1044,8 +1044,7 @@ function saveNoPhoto() { doSave(false); }
 
 function resetForm() {
   currentBarcode = '';
-  currentLocNo = '';
-  currentLocName = '';
+  // currentLocNo ve currentLocName önceki kayıttan korunur
   currentEqPhoto = null; currentEqThumb = null; currentEqPhotoName = '';
   manualVisible = false;
   resetBarcode();
