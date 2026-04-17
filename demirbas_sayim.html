@@ -542,6 +542,10 @@ function makeThumb(dataUrl, maxSize, callback) {
 // ── KAYDET ────────────────────────────
 function doSave(withPhoto) {
   if (!currentBarcode) { showToast('⚠ Barkod gerekli!', true); return; }
+  const duplicate = records.find(r => r.barcode === currentBarcode);
+  if (duplicate) {
+    if (!confirm('⚠ Bu barkod zaten kayıtlı!\n\n' + currentBarcode + '\n\nYine de kaydetmek istiyor musunuz?')) return;
+  }
   const desc = document.getElementById('desc-input').value.trim();
   const now = new Date();
   const record = {
