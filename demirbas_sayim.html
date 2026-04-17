@@ -235,6 +235,31 @@
   .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(90px); background: var(--accent2); color: #0f1117; padding: 10px 22px; border-radius: 50px; font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace; z-index: 999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); pointer-events: none; max-width: 88vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.warn { background: var(--warn); color: #1a1200; }
+
+  .menu-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); width: 36px; height: 36px; font-size: 20px; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; letter-spacing: -2px; }
+  .menu-btn:active { background: var(--surface); }
+
+  .bottom-menu { display: none; position: fixed; inset: 0; z-index: 500; }
+  .bottom-menu.open { display: block; }
+  .bottom-menu-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); }
+  .bottom-menu-sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-radius: 20px 20px 0 0;
+    padding: 1rem 1.25rem 2.5rem;
+    animation: slideUp 0.25s cubic-bezier(0.4,0,0.2,1);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .bottom-menu-title { font-size: 12px; color: var(--text2); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; text-align: center; }
+  .bm-btn { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; cursor: pointer; text-align: left; transition: background 0.15s; }
+  .bm-btn:active { background: var(--bg); }
+  .bm-btn.danger .bm-icon { color: var(--danger); }
+  .bm-btn.danger .bm-label { color: var(--danger); }
+  .bm-btn:disabled { opacity: 0.3; pointer-events: none; }
+  .bm-icon { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
+  .bm-label { font-size: 15px; font-weight: 600; color: var(--text); font-family: 'Syne', sans-serif; }
+  .bm-sub { font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+  .bm-cancel { width: 100%; background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; color: var(--text2); font-size: 14px; font-family: 'Syne', sans-serif; cursor: pointer; margin-top: 4px; }
+  .bm-cancel:active { background: var(--surface2); }
 </style>
 </head>
 <body>
@@ -252,20 +277,40 @@
 
 <header>
   <div>
-    <h1>📦 Demirbaş Sayımı 13</h1>
+    <h1>📦 Demirbaş Sayımı 14</h1>
     <p id="header-date">—</p>
   </div>
-  <div style="display:flex;gap:8px;">
+  <div style="display:flex;gap:8px;align-items:center;">
     <div class="stat" style="padding:6px 12px;">
       <div class="num" id="stat-total" style="font-size:18px;">0</div>
       <div class="lbl">Kayıt</div>
     </div>
-    <div class="stat green" style="padding:6px 12px;">
-      <div class="num" id="stat-photo" style="font-size:18px;">0</div>
-      <div class="lbl">Foto</div>
-    </div>
+    <button class="menu-btn" onclick="toggleMenu()" title="Menü">⋮</button>
   </div>
 </header>
+
+<!-- ALT MENÜ -->
+<div class="bottom-menu" id="bottom-menu">
+  <div class="bottom-menu-backdrop" onclick="toggleMenu()"></div>
+  <div class="bottom-menu-sheet">
+    <div class="bottom-menu-title">İşlemler</div>
+    <button class="bm-btn" id="export-btn" onclick="exportCSV();toggleMenu();" disabled>
+      <span class="bm-icon">⬇</span>
+      <div>
+        <div class="bm-label">CSV İndir</div>
+        <div class="bm-sub">Excel'de açılır</div>
+      </div>
+    </button>
+    <button class="bm-btn danger" id="clear-btn" onclick="clearAll()" disabled>
+      <span class="bm-icon">🗑</span>
+      <div>
+        <div class="bm-label">Tüm Kayıtları Sil</div>
+        <div class="bm-sub">Bu işlem geri alınamaz</div>
+      </div>
+    </button>
+    <button class="bm-cancel" onclick="toggleMenu()">İptal</button>
+  </div>
+</div>
 
 <div class="steps" id="steps-bar">
   <div class="step active" id="step1-bar"></div>
@@ -376,9 +421,6 @@
       <div class="empty-state"><div class="empty-icon">📋</div>Henüz kayıt eklenmedi</div>
     </div>
   </div>
-
-  <button class="outline-btn" id="export-btn" onclick="exportCSV()" disabled>⬇ CSV İndir (Excel)</button>
-  <button class="danger-btn" id="clear-btn" onclick="clearAll()" disabled>Tüm Kayıtları Sil</button>
 
 </div>
 
@@ -924,7 +966,7 @@ function handleEqPhoto(e) {
     dlBtn.textContent = '⬇ Fotoğrafı Kaydet';
     photoSaved = false;
     updateSteps();
-    showToast('Önce fotoğrafı kaydedin!', true, 2500);
+    showToast('Malzeme Adı / Not alanı doldurulabilir (zorunlu değil)', false, 3500);
   };
   reader.readAsDataURL(file);
 }
@@ -958,9 +1000,10 @@ function makeThumb(dataUrl, maxSize, callback) {
 // ── KAYDET ────────────────────────────
 function doSave(withPhoto) {
   if (!currentBarcode) { showToast('⚠ Barkod gerekli!', true); return; }
-  const duplicate = records.find(r => r.barcode === currentBarcode);
-  if (duplicate) {
-    if (!confirm('⚠ Bu barkod zaten kayıtlı!\n\n' + currentBarcode + '\n\nYine de kaydetmek istiyor musunuz?')) return;
+  const duplicateIdx = records.findIndex(r => r.barcode === currentBarcode);
+  if (duplicateIdx !== -1) {
+    if (!confirm('⚠ Bu barkod zaten kayıtlı!\n\n' + currentBarcode + '\n\nÖnceki kaydı silip yeni kayıt oluşturulsun mu?')) return;
+    records.splice(duplicateIdx, 1);
   }
   // Lokasyon validasyonu
   const locNo = currentLocNo;
@@ -1028,19 +1071,22 @@ function deleteRecord(id) {
   render();
 }
 
+function toggleMenu() {
+  document.getElementById('bottom-menu').classList.toggle('open');
+}
+
 function clearAll() {
   if (!confirm('Tüm kayıtlar silinecek. Emin misiniz?')) return;
   records = [];
   localStorage.removeItem(STORAGE_KEY);
   render();
   updateStorageBar();
+  document.getElementById('bottom-menu').classList.remove('open');
 }
 
 // ── RENDER ────────────────────────────
 function render() {
-  const withPhoto = records.filter(r => r.photo).length;
   document.getElementById('stat-total').textContent = records.length;
-  document.getElementById('stat-photo').textContent = withPhoto;
   document.getElementById('rec-count').textContent = records.length + ' kayıt';
   document.getElementById('export-btn').disabled = records.length === 0;
   document.getElementById('clear-btn').disabled = records.length === 0;
