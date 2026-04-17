@@ -1060,10 +1060,7 @@ function resetForm() {
   document.getElementById('save-overlay').classList.remove('show');
   photoSaved = true;
   document.getElementById('desc-input').value = '';
-  document.getElementById('loc-no-input').value = '';
-  document.getElementById('loc-name-input').value = '';
-  document.getElementById('loc-no-input').classList.remove('invalid');
-  document.getElementById('loc-name-input').classList.remove('invalid');
+  // Lokasyon alanları önceki kayıttan korunur — kullanıcı değiştirebilir
   updateSteps();
 }
 
