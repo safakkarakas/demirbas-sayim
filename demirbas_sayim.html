@@ -737,7 +737,7 @@ function filterLocs(query, byNo) {
   const q = normalize(query);
   return LOCATIONS.filter(([no, name]) =>
     byNo ? String(no).startsWith(q) : normalize(name).includes(q)
-  ).slice(0, 30);
+  );
 }
 
 function renderDropdown(id, items, clickFn) {
@@ -804,7 +804,7 @@ function showDropdown(type) {
   const id = type === 'no' ? 'loc-no-input' : 'loc-name-input';
   const val = document.getElementById(id).value.trim();
   const ddId = type === 'no' ? 'loc-no-dropdown' : 'loc-name-dropdown';
-  const items = val ? filterLocs(val, type === 'no') : LOCATIONS.slice(0, 30);
+  const items = val ? filterLocs(val, type === 'no') : LOCATIONS;
   renderDropdown(ddId, items, 'selectLoc');
 }
 
