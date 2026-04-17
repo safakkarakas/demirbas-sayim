@@ -164,6 +164,9 @@
   .danger-btn { width: 100%; padding: 12px; background: transparent; border: 1px solid rgba(247,79,106,0.22); border-radius: var(--radius); color: var(--danger); font-size: 13px; font-weight: 600; font-family: 'Syne', sans-serif; cursor: pointer; opacity: 0.6; }
   .danger-btn:disabled { opacity: 0.18; }
 
+  .dl-btn { width: 100%; padding: 12px; background: rgba(45,232,162,0.1); border: 1.5px solid rgba(45,232,162,0.4); border-radius: var(--radius-sm); color: var(--accent2); font-size: 14px; font-weight: 700; font-family: 'Syne', sans-serif; cursor: pointer; margin-top: 10px; transition: background 0.15s; }
+  .dl-btn:active { background: rgba(45,232,162,0.2); }
+
   .records-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 0.75rem; }
   .records-header { padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .records-header span { font-size: 10px; color: var(--accent); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
@@ -192,7 +195,7 @@
 
 <header>
   <div>
-    <h1>📦 Demirbaş Sayımı 8</h1>
+    <h1>📦 Demirbaş Sayımı 9</h1>
     <p id="header-date">—</p>
   </div>
   <div style="display:flex;gap:8px;">
@@ -263,8 +266,11 @@
     </div>
     <div class="photo-fname" id="eq-fname"></div>
     <input type="file" id="eq-file" accept="image/*" capture="environment" style="display:none;" onchange="handleEqPhoto(event)" />
-    <div class="warn-box">
-      ⚠ Fotoğraf çekince İndirilenler klasörüne otomatik kaydedilir. CSV'de dosya adı görünür.
+    <button class="dl-btn" id="dl-btn" onclick="downloadCurrentPhoto()" style="display:none;">
+      ⬇ Fotoğrafı Kaydet (İndir)
+    </button>
+    <div class="warn-box" id="eq-warn-box">
+      ⚠ Fotoğraf çektikten sonra mutlaka "Fotoğrafı Kaydet" butonuna basın. CSV'de dosya adı görünür.
     </div>
   </div>
 
@@ -513,7 +519,6 @@ function handleEqPhoto(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     currentEqPhoto = ev.target.result;
-    // Thumbnail oluştur (localStorage için)
     makeThumb(currentEqPhoto, MAX_THUMB_SIZE, thumb => {
       currentEqThumb = thumb;
     });
@@ -521,12 +526,23 @@ function handleEqPhoto(e) {
     document.getElementById('eq-preview').style.display = 'block';
     document.getElementById('eq-ph').style.display = 'none';
     document.getElementById('eq-badge').style.display = 'block';
-    document.getElementById('eq-fname').textContent = '💾 ' + currentEqPhotoName;
-    autoDownload(currentEqPhoto, currentEqPhotoName);
-    showToast('📥 ' + currentEqPhotoName, false, 3000);
+    document.getElementById('eq-fname').textContent = '📎 ' + currentEqPhotoName;
+    // Manuel indirme butonu göster
+    document.getElementById('dl-btn').style.display = 'block';
+    document.getElementById('dl-btn').textContent = '⬇ Fotoğrafı Kaydet — ' + currentEqPhotoName;
+    showToast('Fotoğraf hazır — kaydet butonuna basın', false, 3000);
     updateSteps();
   };
   reader.readAsDataURL(file);
+}
+
+function downloadCurrentPhoto() {
+  if (!currentEqPhoto || !currentEqPhotoName) return;
+  autoDownload(currentEqPhoto, currentEqPhotoName);
+  const btn = document.getElementById('dl-btn');
+  btn.textContent = '✓ Kaydedildi — ' + currentEqPhotoName;
+  btn.style.opacity = '0.6';
+  showToast('📥 ' + currentEqPhotoName, false, 3000);
 }
 
 function makeThumb(dataUrl, maxSize, callback) {
@@ -581,6 +597,8 @@ function resetForm() {
   document.getElementById('eq-badge').style.display = 'none';
   document.getElementById('eq-fname').textContent = '';
   document.getElementById('eq-file').value = '';
+  document.getElementById('dl-btn').style.display = 'none';
+  document.getElementById('dl-btn').style.opacity = '1';
   document.getElementById('desc-input').value = '';
   updateSteps();
 }
