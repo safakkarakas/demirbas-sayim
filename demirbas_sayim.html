@@ -168,6 +168,29 @@
   .dl-btn:active { transform: scale(0.98); opacity: 0.85; }
   .dl-btn.done { background: var(--surface2); border: 1.5px solid var(--accent2); color: var(--accent2); }
 
+  /* KAYDET OVERLAY */
+  .save-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 2.5rem;
+    backdrop-filter: blur(3px);
+  }
+  .save-overlay.show { display: flex; }
+  .save-overlay-inner {
+    width: calc(100% - 2.5rem);
+    max-width: 480px;
+  }
+  .save-overlay-msg {
+    text-align: center; margin-bottom: 1rem;
+    font-size: 13px; color: rgba(255,255,255,0.7);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .save-overlay-msg strong { color: var(--accent2); display: block; font-size: 15px; margin-bottom: 4px; }
+
   .records-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 0.75rem; }
   .records-header { padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .records-header span { font-size: 10px; color: var(--accent); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
@@ -194,9 +217,20 @@
 </head>
 <body>
 
+<!-- KAYDET OVERLAY — fotoğraf kaydedilince ekranı kilitler -->
+<div class="save-overlay" id="save-overlay">
+  <div class="save-overlay-inner">
+    <div class="save-overlay-msg">
+      <strong>✓ Fotoğraf kaydedildi</strong>
+      Kaydı tamamlamak için aşağıdaki butona basın
+    </div>
+    <button class="save-btn" style="width:100%;margin:0;" onclick="saveRecord()">✓ Kaydet — Sonraki Ekipman</button>
+  </div>
+</div>
+
 <header>
   <div>
-    <h1>📦 Demirbaş Sayımı 10</h1>
+    <h1>📦 Demirbaş Sayımı 11</h1>
     <p id="header-date">—</p>
   </div>
   <div style="display:flex;gap:8px;">
@@ -544,6 +578,8 @@ function downloadCurrentPhoto() {
   const dlBtn = document.getElementById('dl-btn');
   dlBtn.className = 'dl-btn done';
   dlBtn.textContent = '✓ Fotoğraf Kaydedildi — ' + currentEqPhotoName;
+  // Overlay göster — ekranı kilitle, sadece Kaydet görünsün
+  document.getElementById('save-overlay').classList.add('show');
   updateSteps();
   showToast('📥 Kaydedildi', false, 2000);
 }
@@ -602,6 +638,7 @@ function resetForm() {
   document.getElementById('eq-file').value = '';
   document.getElementById('dl-btn').style.display = 'none';
   document.getElementById('dl-btn').className = 'dl-btn';
+  document.getElementById('save-overlay').classList.remove('show');
   photoSaved = true;
   document.getElementById('desc-input').value = '';
   updateSteps();
