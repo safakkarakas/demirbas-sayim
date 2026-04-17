@@ -252,7 +252,7 @@
 
 <header>
   <div>
-    <h1>📦 Demirbaş Sayımı 12</h1>
+    <h1>📦 Demirbaş Sayımı 13</h1>
     <p id="header-date">—</p>
   </div>
   <div style="display:flex;gap:8px;">
@@ -275,10 +275,30 @@
 
 <div class="section">
 
-  <!-- BARKOD -->
-  <div class="card" id="card-barcode">
+  <!-- 01 — LOKASYON -->
+  <div class="card" id="card-loc">
     <div class="card-label">
-      <span>01 — Barkod</span>
+      <span>01 — Lokasyon</span>
+      <div class="check" id="check-loc">✓</div>
+    </div>
+    <div style="margin-bottom:10px;position:relative;">
+      <div class="field-label">Lokasyon No <span class="req">*</span></div>
+      <input type="text" id="loc-no-input" placeholder="Numara girin veya arayın..." autocomplete="off"
+        inputmode="numeric" oninput="onLocNoInput()" onfocus="showDropdown('no')" onblur="hideDropdown(300)" />
+      <div class="loc-dropdown" id="loc-no-dropdown"></div>
+    </div>
+    <div style="position:relative;">
+      <div class="field-label">Lokasyon Adı <span class="req">*</span></div>
+      <input type="text" id="loc-name-input" placeholder="Ad girin veya arayın..." autocomplete="off"
+        oninput="onLocNameInput()" onfocus="showDropdown('name')" onblur="hideDropdown(300)" />
+      <div class="loc-dropdown" id="loc-name-dropdown"></div>
+    </div>
+  </div>
+
+  <!-- 02 — BARKOD -->
+  <div class="card dimmed" id="card-barcode">
+    <div class="card-label">
+      <span>02 — Barkod</span>
       <div class="check" id="check-barcode">✓</div>
     </div>
     <div class="api-note" id="api-note">
@@ -306,10 +326,10 @@
     </div>
   </div>
 
-  <!-- EKİPMAN FOTOĞRAFI -->
+  <!-- 03 — EKİPMAN FOTOĞRAFI -->
   <div class="card dimmed" id="card-photo">
     <div class="card-label">
-      <span>02 — Ekipman Fotoğrafı</span>
+      <span>03 — Ekipman Fotoğrafı</span>
       <div class="check" id="check-photo">✓</div>
     </div>
     <div class="photo-zone accent2-border" onclick="document.getElementById('eq-file').click()">
@@ -325,36 +345,18 @@
     <input type="file" id="eq-file" accept="image/*" capture="environment" style="display:none;" onchange="handleEqPhoto(event)" />
   </div>
 
-  <!-- FOTOĞRAF KAYDET BUTONU — fotoğraf çekince belirir -->
+  <!-- 04 — MALZEME ADI / NOT -->
+  <div class="card dimmed" id="card-desc">
+    <div class="card-label">04 — Malzeme Adı / Not (opsiyonel)</div>
+    <input type="text" id="desc-input" placeholder="Malzeme adı, not..." autocomplete="off" />
+  </div>
+
+  <!-- FOTOĞRAF KAYDET -->
   <button class="dl-btn" id="dl-btn" onclick="downloadCurrentPhoto()" style="display:none;">
     ⬇ Fotoğrafı Kaydet
   </button>
 
-  <!-- AÇIKLAMA + LOKASYON -->
-  <div class="card dimmed" id="card-desc">
-    <div class="card-label">03 — Bilgiler</div>
-
-    <div style="margin-bottom:10px;">
-      <div class="field-label">Malzeme Adı / Not</div>
-      <input type="text" id="desc-input" placeholder="Malzeme adı, not..." autocomplete="off" />
-    </div>
-
-    <div style="margin-bottom:10px;position:relative;">
-      <div class="field-label">Lokasyon No <span class="req">*</span></div>
-      <input type="text" id="loc-no-input" placeholder="Numara girin veya arayın..." autocomplete="off"
-        inputmode="numeric" oninput="onLocNoInput()" onfocus="showDropdown('no')" onblur="hideDropdown(300)" />
-      <div class="loc-dropdown" id="loc-no-dropdown"></div>
-    </div>
-
-    <div style="position:relative;">
-      <div class="field-label">Lokasyon Adı <span class="req">*</span></div>
-      <input type="text" id="loc-name-input" placeholder="Ad girin veya arayın..." autocomplete="off"
-        oninput="onLocNameInput()" onfocus="showDropdown('name')" onblur="hideDropdown(300)" />
-      <div class="loc-dropdown" id="loc-name-dropdown"></div>
-    </div>
-
-  </div>
-
+  <!-- KAYDET -->
   <button class="save-btn" id="save-btn" onclick="saveRecord()" disabled>✓ Kaydet — Sonraki Ekipman</button>
 
   <!-- DEPOLAMA DURUMU -->
@@ -595,6 +597,8 @@ const LOCATIONS = [
 // ── STATE ──────────────────────────────
 let records = [];
 let currentBarcode = '';
+let currentLocNo = '';
+let currentLocName = '';
 let currentEqPhoto = null;      // tam boyut (indirmek için)
 let currentEqThumb = null;      // küçük önizleme (localStorage için)
 let currentEqPhotoName = '';
@@ -705,37 +709,49 @@ function renderDropdown(id, items, clickFn) {
 function selectLoc(no) {
   const loc = LOCATIONS.find(([n]) => n === no);
   if (!loc) return;
+  currentLocNo = String(loc[0]);
+  currentLocName = loc[1];
   document.getElementById('loc-no-input').value = loc[0];
   document.getElementById('loc-name-input').value = loc[1];
   document.getElementById('loc-no-input').classList.remove('invalid');
   document.getElementById('loc-name-input').classList.remove('invalid');
   document.getElementById('loc-no-dropdown').classList.remove('open');
   document.getElementById('loc-name-dropdown').classList.remove('open');
+  updateSteps();
 }
 
 function onLocNoInput() {
   const val = document.getElementById('loc-no-input').value.trim();
-  // Tam eşleşme varsa adı doldur
   const exact = LOCATIONS.find(([no]) => String(no) === val);
   if (exact) {
+    currentLocNo = String(exact[0]);
+    currentLocName = exact[1];
     document.getElementById('loc-name-input').value = exact[1];
     document.getElementById('loc-no-dropdown').classList.remove('open');
   } else {
+    currentLocNo = '';
+    currentLocName = '';
     document.getElementById('loc-name-input').value = '';
     renderDropdown('loc-no-dropdown', filterLocs(val, true), 'selectLoc');
   }
+  updateSteps();
 }
 
 function onLocNameInput() {
   const val = document.getElementById('loc-name-input').value.trim();
   const exact = LOCATIONS.find(([, name]) => normalize(name) === normalize(val));
   if (exact) {
+    currentLocNo = String(exact[0]);
+    currentLocName = exact[1];
     document.getElementById('loc-no-input').value = exact[0];
     document.getElementById('loc-name-dropdown').classList.remove('open');
   } else {
+    currentLocNo = '';
+    currentLocName = '';
     document.getElementById('loc-no-input').value = '';
     renderDropdown('loc-name-dropdown', filterLocs(val, false), 'selectLoc');
   }
+  updateSteps();
 }
 
 function showDropdown(type) {
@@ -755,16 +771,36 @@ function hideDropdown(delay) {
 
 // ── ADIM YÖNETİMİ ─────────────────────
 function updateSteps() {
+  const hasLoc = !!(currentLocNo && currentLocName);
   const hasBarcode = !!currentBarcode;
   const hasPhoto = !!currentEqPhoto;
-  const canSave = hasBarcode && (photoSaved);
-  document.getElementById('step1-bar').className = 'step ' + (hasBarcode ? 'done' : 'active');
-  document.getElementById('step2-bar').className = 'step ' + (hasPhoto ? 'done' : hasBarcode ? 'active' : '');
-  document.getElementById('step3-bar').className = 'step ' + (hasBarcode ? 'active' : '');
+  const canSave = hasLoc && hasBarcode && photoSaved;
+
+  // Adım çubuğu
+  document.getElementById('step1-bar').className = 'step ' + (hasLoc ? 'done' : 'active');
+  document.getElementById('step2-bar').className = 'step ' + (hasBarcode ? 'done' : hasLoc ? 'active' : '');
+  document.getElementById('step3-bar').className = 'step ' + (hasPhoto && photoSaved ? 'done' : hasBarcode ? 'active' : '');
+
+  // Kartlar — kilit mantığı
+  document.getElementById('card-loc').classList.remove('dimmed');
+  document.getElementById('card-barcode').classList.toggle('dimmed', !hasLoc);
   document.getElementById('card-photo').classList.toggle('dimmed', !hasBarcode);
   document.getElementById('card-desc').classList.toggle('dimmed', !hasBarcode);
+
+  // dl-btn: sadece fotoğraf çekilmişse ve henüz kaydedilmemişse göster
+  const dlBtn = document.getElementById('dl-btn');
+  if (hasPhoto && !photoSaved) {
+    dlBtn.style.display = 'block';
+  } else if (!hasPhoto) {
+    dlBtn.style.display = 'none';
+  }
+
+  // Check işaretleri
+  document.getElementById('check-loc').classList.toggle('show', hasLoc);
   document.getElementById('check-barcode').classList.toggle('show', hasBarcode);
   document.getElementById('check-photo').classList.toggle('show', hasPhoto && photoSaved);
+
+  // Kaydet butonu
   document.getElementById('save-btn').disabled = !canSave;
 }
 
@@ -927,19 +963,13 @@ function doSave(withPhoto) {
     if (!confirm('⚠ Bu barkod zaten kayıtlı!\n\n' + currentBarcode + '\n\nYine de kaydetmek istiyor musunuz?')) return;
   }
   // Lokasyon validasyonu
-  const locNo = document.getElementById('loc-no-input').value.trim();
-  const locName = document.getElementById('loc-name-input').value.trim();
-  const validLoc = LOCATIONS.find(([no]) => String(no) === locNo);
-  let valid = true;
-  if (!locNo || !validLoc) {
-    document.getElementById('loc-no-input').classList.add('invalid');
-    valid = false;
+  const locNo = currentLocNo;
+  const locName = currentLocName;
+  if (!locNo || !locName) {
+    if (!locNo) document.getElementById('loc-no-input').classList.add('invalid');
+    if (!locName) document.getElementById('loc-name-input').classList.add('invalid');
+    showToast('⚠ Lokasyon zorunlu!', true); return;
   }
-  if (!locName) {
-    document.getElementById('loc-name-input').classList.add('invalid');
-    valid = false;
-  }
-  if (!valid) { showToast('⚠ Lokasyon zorunlu!', true); return; }
 
   const desc = document.getElementById('desc-input').value.trim();
   const now = new Date();
@@ -966,7 +996,10 @@ function saveRecord() { doSave(true); }
 function saveNoPhoto() { doSave(false); }
 
 function resetForm() {
-  currentBarcode = ''; currentEqPhoto = null; currentEqThumb = null; currentEqPhotoName = '';
+  currentBarcode = '';
+  currentLocNo = '';
+  currentLocName = '';
+  currentEqPhoto = null; currentEqThumb = null; currentEqPhotoName = '';
   manualVisible = false;
   resetBarcode();
   document.getElementById('eq-preview').style.display = 'none';
