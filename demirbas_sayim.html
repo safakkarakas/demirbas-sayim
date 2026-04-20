@@ -1246,7 +1246,7 @@ async function uploadToDrive(dataUrl, filename) {
   for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
   const blob = new Blob([arr], { type: mime });
 
-  // 1. Dosyayı multipart olarak Drive'a yükle
+  // Dosyayı multipart olarak Drive'a yükle
   const metadata = JSON.stringify({
     name: filename,
     parents: [DRIVE_FOLDER_ID]
@@ -1266,8 +1266,16 @@ async function uploadToDrive(dataUrl, filename) {
   );
 
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error?.message || 'Drive API hatası');
+    const errBody = await res.json().catch(() => ({}));
+    const errMsg  = errBody.error?.message || errBody.error?.status || ('HTTP ' + res.status);
+    // 401 = token süresi dolmuş veya scope yok → çıkış yaptır
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('ks_user');
+      currentUser = null;
+      showLoginScreen();
+      throw new Error('Oturum süresi doldu, lütfen tekrar giriş yapın. (' + errMsg + ')');
+    }
+    throw new Error('Drive hatası: ' + errMsg);
   }
 
   const data = await res.json();
