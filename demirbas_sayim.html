@@ -143,14 +143,6 @@
   .api-note.show { display: block; }
 
   /* STORAGE DURUM ÇUBUĞU */
-  .storage-bar {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 8px 12px;
-    margin-bottom: 0.75rem;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .storage-bar .sb-label { font-size: 10px; color: var(--text2); font-family: 'JetBrains Mono', monospace; flex: 1; }
-  .storage-bar .sb-val { font-size: 11px; color: var(--accent); font-family: 'JetBrains Mono', monospace; font-weight: 600; }
   .sb-track { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
   .sb-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s; }
   .sb-fill.warn { background: var(--warn); }
@@ -338,15 +330,7 @@
     </div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
-    <div class="stat" style="padding:6px 12px;">
-      <div class="num" id="stat-total" style="font-size:18px;">0</div>
-      <div class="lbl">Kayıt</div>
-    </div>
     <button class="menu-btn" onclick="toggleMenu()" title="Menü">⋮</button>
-    <div class="user-chip" id="user-chip" style="display:none;">
-      <img id="user-avatar" src="" alt="" />
-      <span id="user-name-chip">—</span>
-    </div>
   </div>
 </header>
 
@@ -370,7 +354,6 @@
       </div>
     </button>
     <button class="bm-cancel" onclick="toggleMenu()">İptal</button>
-    <button class="bm-cancel" onclick="alert('LS: ' + (localStorage.getItem('ks_user') ? 'VAR - ' + JSON.parse(localStorage.getItem('ks_user')).email : 'YOK'))" style="margin-top:4px;color:#666;font-size:11px;">🔍 localStorage Test</button>
   </div>
 </div>
 
@@ -465,13 +448,6 @@
 
   <!-- KAYDET -->
   <button class="save-btn" id="save-btn" onclick="saveRecord()" disabled>✓ Kaydet — Sonraki Ekipman</button>
-
-  <!-- DEPOLAMA DURUMU -->
-  <div class="storage-bar" id="storage-bar" style="display:none;">
-    <div class="sb-label">Yerel Depolama</div>
-    <div class="sb-track"><div class="sb-fill" id="sb-fill" style="width:0%"></div></div>
-    <div class="sb-val" id="sb-val">—</div>
-  </div>
 
   <!-- KAYIT LİSTESİ -->
   <div class="records-card">
@@ -801,13 +777,12 @@ function handleCredentialResponse(response) {
 function onLoginSuccess() {
   try {
     document.getElementById('login-screen').classList.add('hide');
-    document.getElementById('user-chip').style.display = 'flex';
-    document.getElementById('user-name-chip').textContent = (currentUser.name || '').split(' ')[0];
+    // user-chip kaldırıldı
+    // user-name-chip kaldırıldı
     if (currentUser.picture) {
-      document.getElementById('user-avatar').src = currentUser.picture;
+      // user-avatar kaldırıldı
     }
     loadFromStorage();
-    loadFromServer();
   } catch(e) {
     alert('onLoginSuccess hatası: ' + e.message);
   }
@@ -839,7 +814,7 @@ function signOut() {
   currentUser = null;
   records = [];
   render();
-  document.getElementById('user-chip').style.display = 'none';
+  // user-chip kaldırıldı
   document.getElementById('login-screen').classList.remove('hide');
   toggleMenu();
 }
@@ -968,8 +943,7 @@ function saveToStorage() {
       thumb: r.thumb || null
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    updateStorageBar();
-  } catch(e) {
+    } catch(e) {
     if (e.name === 'QuotaExceededError') {
       showToast('⚠ Depolama dolu! Fotoğraf boyutları azaltıldı.', true, 4000);
       // Fotoğrafları çıkarıp tekrar dene
@@ -979,19 +953,6 @@ function saveToStorage() {
   }
 }
 
-function updateStorageBar() {
-  try {
-    const used = new Blob(Object.values(localStorage)).size;
-    const total = 5 * 1024 * 1024; // ~5MB tipik limit
-    const pct = Math.min(100, Math.round(used / total * 100));
-    const bar = document.getElementById('storage-bar');
-    const fill = document.getElementById('sb-fill');
-    const val = document.getElementById('sb-val');
-    bar.style.display = 'flex';
-    fill.style.width = pct + '%';
-    fill.className = 'sb-fill' + (pct > 80 ? ' danger' : pct > 60 ? ' warn' : '');
-    val.textContent = pct + '%';
-  } catch(e) {}
 }
 
 // ── LOKASYONlar ─────────────────────────
@@ -1363,6 +1324,8 @@ async function doSave(withPhoto) {
       if (!confirm('⚠ Bu barkod zaten kayıtlı!\n' + currentBarcode + '\n\nÖnceki kaydı silip yeni kayıt oluşturulsun mu?')) {
         saveBtn.disabled = false;
         saveBtn.textContent = '✓ Kaydet — Sonraki Ekipman';
+        document.getElementById('save-overlay').classList.remove('show');
+        resetForm();
         return;
       }
       // Önceki kaydı sil
@@ -1498,17 +1461,15 @@ function clearAll() {
   records = [];
   localStorage.removeItem(STORAGE_KEY);
   render();
-  updateStorageBar();
   document.getElementById('bottom-menu').classList.remove('open');
 }
 
 // ── RENDER ────────────────────────────
 function render() {
-  document.getElementById('stat-total').textContent = records.length;
+  // stat-total kaldırıldı
   document.getElementById('rec-count').textContent = records.length + ' kayıt';
   document.getElementById('export-btn').disabled = records.length === 0;
   document.getElementById('clear-btn').disabled = records.length === 0;
-  updateStorageBar();
 
   const list = document.getElementById('records-list');
   if (!records.length) {
