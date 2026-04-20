@@ -1213,6 +1213,23 @@ async function downloadCurrentPhoto() {
   if (!currentEqPhoto || !currentEqPhotoName) return;
   if (!currentBarcode) {
     showToast('⚠ Önce barkod girilmeli!', true);
+    // Overlay'i kapat, fotoğrafı sıfırla, kullanıcı barkod girebilsin
+    document.getElementById('save-overlay').classList.remove('show');
+    photoSaved = true; // kilidi aç
+    // Fotoğrafı sıfırla — tekrar çekilecek
+    currentEqPhoto = null;
+    currentEqThumb = null;
+    currentEqPhotoName = '';
+    currentDriveUrl = '';
+    document.getElementById('eq-preview').style.display = 'none';
+    document.getElementById('eq-preview').src = '';
+    document.getElementById('eq-ph').style.display = 'flex';
+    document.getElementById('eq-badge').style.display = 'none';
+    document.getElementById('eq-fname').textContent = '';
+    document.getElementById('eq-file').value = '';
+    document.getElementById('dl-btn').style.display = 'none';
+    document.getElementById('dl-btn').className = 'dl-btn';
+    updateSteps();
     return;
   }
   const dlBtn = document.getElementById('dl-btn');
