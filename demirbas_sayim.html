@@ -817,7 +817,8 @@ function onLoginSuccess() {
   if (currentUser.picture) {
     document.getElementById('user-avatar').src = currentUser.picture;
   }
-  loadFromServer();
+  // localStorage'dan yükle
+  loadFromStorage();
 }
 
 function signOut() {
@@ -850,31 +851,34 @@ function signOut() {
 
 // ── SUNUCU API ─────────────────────────
 async function loadFromServer() {
-  showToast('Kayıtlar yükleniyor...', false, 2000);
   try {
-    const res  = await fetch(`${API_URL}?action=getRecords`);
+    const controller = new AbortController();
+    const timeout    = setTimeout(() => controller.abort(), 8000); // 8 sn timeout
+    const res  = await fetch(`${API_URL}?action=getRecords`, { signal: controller.signal });
+    clearTimeout(timeout);
     const data = await res.json();
-    if (data.records) {
+    if (data.records && data.records.length > 0) {
       records = data.records.map(r => ({
-        id        : r.id,
+        id        : r.id || Date.now(),
         barcode   : r.barcode,
-        desc      : r.note,
-        locNo     : String(r.locNo),
-        locName   : r.locName,
-        photo     : null,   // thumbnail sunucuda yok, Drive linki var
-        photoName : r.photoName,
-        photoUrl  : r.photoUrl,
-        time      : r.time,
-        date      : r.date,
-        userEmail : r.email,
-        userName  : r.userName,
-        sessionId : r.sessionId
+        desc      : r.note || '',
+        locNo     : String(r.locNo || ''),
+        locName   : r.locName || '',
+        photo     : null,
+        photoName : r.photoName || '',
+        photoUrl  : r.photoUrl  || '',
+        time      : r.time  || '',
+        date      : r.date  || '',
+        userEmail : r.email || '',
+        userName  : r.userName || '',
+        sessionId : r.sessionId || ''
       }));
       render();
+    } else {
+      loadFromStorage();
     }
   } catch(e) {
-    showToast('⚠ Sunucuya bağlanılamadı', true, 3000);
-    // Fallback: localStorage
+    // Sessizce localStorage'a düş — kullanıcıya hata gösterme
     loadFromStorage();
   }
 }
@@ -1238,48 +1242,29 @@ async function downloadCurrentPhoto() {
 async function uploadToDrive(dataUrl, filename) {
   if (!currentUser || !currentUser.token) throw new Error('Giriş yapılmamış');
 
-  // base64 → Blob
+  // base64 kısmını al (data:image/jpeg;base64,... → sadece base64)
   const base64 = dataUrl.split(',')[1];
-  const mime   = dataUrl.split(';')[0].split(':')[1];
-  const binary = atob(base64);
-  const arr    = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
-  const blob = new Blob([arr], { type: mime });
+  if (!base64) throw new Error('Fotoğraf verisi okunamadı');
 
-  // Dosyayı multipart olarak Drive'a yükle
-  const metadata = JSON.stringify({
-    name: filename,
-    parents: [DRIVE_FOLDER_ID]
+  // Apps Script üzerinden Drive'a yükle
+  const res = await fetch(API_URL, {
+    method : 'POST',
+    body   : JSON.stringify({
+      action      : 'uploadPhoto',
+      photoBase64 : base64,
+      photoName   : filename,
+      userEmail   : currentUser.email,
+      userName    : currentUser.name
+    })
   });
 
-  const form = new FormData();
-  form.append('metadata', new Blob([metadata], { type: 'application/json' }));
-  form.append('file', blob);
-
-  const res = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink',
-    {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + currentUser.token },
-      body: form
-    }
-  );
-
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    const errMsg  = errBody.error?.message || errBody.error?.status || ('HTTP ' + res.status);
-    // 401 = token süresi dolmuş veya scope yok → çıkış yaptır
-    if (res.status === 401 || res.status === 403) {
-      localStorage.removeItem('ks_user');
-      currentUser = null;
-      showLoginScreen();
-      throw new Error('Oturum süresi doldu, lütfen tekrar giriş yapın. (' + errMsg + ')');
-    }
-    throw new Error('Drive hatası: ' + errMsg);
-  }
+  if (!res.ok) throw new Error('Sunucu hatası: HTTP ' + res.status);
 
   const data = await res.json();
-  return data.webViewLink || ('https://drive.google.com/file/d/' + data.id + '/view');
+  if (data.error) throw new Error(data.error);
+  if (!data.fileUrl) throw new Error('Drive URL alınamadı');
+
+  return data.fileUrl;
 }
 
 function makeThumb(dataUrl, maxSize, callback) {
