@@ -1236,7 +1236,7 @@ async function downloadCurrentPhoto() {
   } catch(err) {
     dlBtn.disabled = false;
     dlBtn.textContent = '⬇ Fotoğrafı ve Notu Kaydet';
-    showToast('⚠ Drive yükleme hatası: ' + err.message, true, 4000);
+    showToast('⚠ ' + (err.message || err.toString()), true, 6000);
   }
 }
 
@@ -1244,8 +1244,8 @@ async function downloadCurrentPhoto() {
 async function uploadToDrive(dataUrl, filename) {
   if (!currentUser || !currentUser.token) throw new Error('Giriş yapılmamış');
 
-  // Fotoğrafı sıkıştır — max 1200px, %80 kalite (payload boyutunu küçült)
-  const compressed = await compressImage(dataUrl, 1200, 0.80);
+  // Fotoğrafı sıkıştır — max 800px, %60 kalite
+  const compressed = await compressImage(dataUrl, 800, 0.60);
   const base64 = compressed.split(',')[1];
   if (!base64) throw new Error('Fotoğraf verisi okunamadı');
 
