@@ -396,13 +396,13 @@
 
   <!-- 04 — MALZEME ADI / NOT -->
   <div class="card dimmed" id="card-desc">
-    <div class="card-label">04 — Malzeme Adı / Not (opsiyonel)</div>
-    <input type="text" id="desc-input" placeholder="Malzeme adı, not..." autocomplete="off" />
+    <div class="card-label">04 — Not (opsiyonel)</div>
+    <input type="text" id="desc-input" placeholder="Not..." autocomplete="off" />
   </div>
 
   <!-- FOTOĞRAF KAYDET -->
   <button class="dl-btn" id="dl-btn" onclick="downloadCurrentPhoto()" style="display:none;">
-    ⬇ Fotoğrafı Kaydet
+    ⬇ Fotoğrafı ve Notu Kaydet
   </button>
 
   <!-- KAYDET -->
@@ -970,7 +970,7 @@ function handleEqPhoto(e) {
     dlBtn.textContent = '⬇ Fotoğrafı Kaydet';
     photoSaved = false;
     updateSteps();
-    showToast('Malzeme Adı / Not alanı doldurulabilir (zorunlu değil)', false, 3500);
+    showToast('Not girebilirsiniz.', false, 3500);
   };
   reader.readAsDataURL(file);
 }
@@ -981,7 +981,7 @@ function downloadCurrentPhoto() {
   photoSaved = true;
   const dlBtn = document.getElementById('dl-btn');
   dlBtn.className = 'dl-btn done';
-  dlBtn.textContent = '✓ Fotoğraf Kaydedildi — ' + currentEqPhotoName;
+  dlBtn.textContent = '✓ Fotoğraf ve Not Kaydedildi — ' + currentEqPhotoName;
   // Overlay göster — ekranı kilitle, sadece Kaydet görünsün
   document.getElementById('save-overlay').classList.add('show');
   updateSteps();
