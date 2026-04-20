@@ -1211,6 +1211,10 @@ function handleEqPhoto(e) {
 
 async function downloadCurrentPhoto() {
   if (!currentEqPhoto || !currentEqPhotoName) return;
+  if (!currentBarcode) {
+    showToast('⚠ Önce barkod girilmeli!', true);
+    return;
+  }
   const dlBtn = document.getElementById('dl-btn');
   dlBtn.disabled = true;
   dlBtn.textContent = '⏳ Drive\'a yükleniyor...';
