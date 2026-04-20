@@ -1244,26 +1244,32 @@ async function downloadCurrentPhoto() {
 async function uploadToDrive(dataUrl, filename) {
   if (!currentUser || !currentUser.token) throw new Error('Giriş yapılmamış');
 
-  // Fotoğrafı sıkıştır — max 800px, %60 kalite
+  // Fotoğrafı sıkıştır
   const compressed = await compressImage(dataUrl, 800, 0.60);
   const base64 = compressed.split(',')[1];
   if (!base64) throw new Error('Fotoğraf verisi okunamadı');
 
+  // FormData ile gönder — CORS sorununu bypass eder
+  const formData = new FormData();
+  formData.append('action',      'uploadPhoto');
+  formData.append('photoBase64', base64);
+  formData.append('photoName',   filename);
+  formData.append('userEmail',   currentUser.email);
+  formData.append('userName',    currentUser.name);
+
   const res = await fetch(API_URL, {
     method   : 'POST',
     redirect : 'follow',
-    body     : JSON.stringify({
-      action      : 'uploadPhoto',
-      photoBase64 : base64,
-      photoName   : filename,
-      userEmail   : currentUser.email,
-      userName    : currentUser.name
-    })
+    body     : formData
   });
 
   if (!res.ok) throw new Error('Sunucu hatası: HTTP ' + res.status);
 
-  const data = await res.json();
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch(e) { throw new Error('Sunucu yanıtı okunamadı: ' + text.substring(0, 100)); }
+
   if (data.error) throw new Error(data.error);
   if (!data.fileUrl) throw new Error('Drive URL alınamadı');
 
