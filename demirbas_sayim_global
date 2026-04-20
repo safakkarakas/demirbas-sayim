@@ -733,17 +733,20 @@ window.addEventListener('load', () => {
     document.getElementById('login-err').classList.add('show');
     return;
   }
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: handleCredentialResponse,
-    auto_select: false
-  });
   // Daha önce giriş yapıldıysa localStorage'dan yükle
   const saved = localStorage.getItem('ks_user');
   if (saved) {
     try {
-      currentUser = JSON.parse(saved);
-      onLoginSuccess();
+      const user = JSON.parse(saved);
+      // Token süresi dolmamışsa direkt giriş yap
+      if (user.expiry && Date.now() < user.expiry) {
+        currentUser = user;
+        onLoginSuccess();
+      } else {
+        // Token dolmuş, yeniden giriş iste
+        localStorage.removeItem('ks_user');
+        showLoginScreen();
+      }
     } catch(e) { showLoginScreen(); }
   } else {
     showLoginScreen();
@@ -759,35 +762,61 @@ function showLoginScreen() {
 
 function signIn() {
   if (typeof google === 'undefined') return;
-  google.accounts.id.prompt();
+  // Drive scope'u ile access token iste
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id : GOOGLE_CLIENT_ID,
+    scope     : 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/drive.file',
+    callback  : handleTokenResponse
+  });
+  tokenClient.requestAccessToken();
 }
 
-function handleCredentialResponse(response) {
+async function handleTokenResponse(tokenResponse) {
+  if (tokenResponse.error) {
+    document.getElementById('login-err').textContent = 'Giriş başarısız: ' + tokenResponse.error;
+    document.getElementById('login-err').classList.add('show');
+    return;
+  }
   try {
-    // JWT payload'ı decode et
-    const payload = JSON.parse(atob(response.credential.split('.')[1]));
+    // Kullanıcı bilgisini Google'dan al
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
+    });
+    const info = await res.json();
     currentUser = {
-      email  : payload.email,
-      name   : payload.name,
-      picture: payload.picture,
-      token  : response.credential
+      email  : info.email,
+      name   : info.name,
+      picture: info.picture,
+      token  : tokenResponse.access_token
     };
+    // token_expiry hesapla (3600 sn)
+    currentUser.expiry = Date.now() + (tokenResponse.expires_in || 3600) * 1000;
     localStorage.setItem('ks_user', JSON.stringify(currentUser));
     onLoginSuccess();
   } catch(e) {
+    document.getElementById('login-err').textContent = 'Kullanıcı bilgisi alınamadı.';
     document.getElementById('login-err').classList.add('show');
   }
 }
 
+function handleCredentialResponse(response) {
+  // Bu fonksiyon artık kullanılmıyor, signIn() üzerinden gidiyoruz
+}
+
 function onLoginSuccess() {
+  // Token süresi dolmuş mu kontrol et
+  if (currentUser.expiry && Date.now() > currentUser.expiry) {
+    localStorage.removeItem('ks_user');
+    currentUser = null;
+    showLoginScreen();
+    return;
+  }
   document.getElementById('login-screen').classList.add('hide');
-  // Header chip
   document.getElementById('user-chip').style.display = 'flex';
   document.getElementById('user-name-chip').textContent = currentUser.name.split(' ')[0];
   if (currentUser.picture) {
     document.getElementById('user-avatar').src = currentUser.picture;
   }
-  // Kayıtları sunucudan yükle
   loadFromServer();
 }
 
