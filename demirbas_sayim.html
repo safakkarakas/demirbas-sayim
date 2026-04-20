@@ -817,8 +817,10 @@ function onLoginSuccess() {
   if (currentUser.picture) {
     document.getElementById('user-avatar').src = currentUser.picture;
   }
-  // localStorage'dan yükle
+  // Önce localStorage'dan yükle (hızlı görünüm)
   loadFromStorage();
+  // Sonra Sheets'ten güncelle (güncel ve kalıcı veriler)
+  loadFromServer();
 }
 
 function signOut() {
@@ -853,33 +855,33 @@ function signOut() {
 async function loadFromServer() {
   try {
     const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), 8000); // 8 sn timeout
+    const timeout    = setTimeout(() => controller.abort(), 10000);
     const res  = await fetch(`${API_URL}?action=getRecords`, { signal: controller.signal });
     clearTimeout(timeout);
     const data = await res.json();
-    if (data.records && data.records.length > 0) {
+    if (data.records) {
       records = data.records.map(r => ({
-        id        : r.id || Date.now(),
-        barcode   : r.barcode,
-        desc      : r.note || '',
+        id        : r.id || String(Date.now()),
+        barcode   : r.barcode   || '',
+        desc      : r.note      || '',
         locNo     : String(r.locNo || ''),
-        locName   : r.locName || '',
+        locName   : r.locName   || '',
         photo     : null,
         photoName : r.photoName || '',
         photoUrl  : r.photoUrl  || '',
-        time      : r.time  || '',
-        date      : r.date  || '',
-        userEmail : r.email || '',
-        userName  : r.userName || '',
+        time      : r.time      || '',
+        date      : r.date      || '',
+        userEmail : r.email     || '',
+        userName  : r.userName  || '',
         sessionId : r.sessionId || ''
       }));
+      // localStorage'ı güncelle — sonraki açılışta hızlı görünüm için
+      saveToStorage();
       render();
-    } else {
-      loadFromStorage();
+      showToast('✓ ' + records.length + ' kayıt yüklendi', false, 2000);
     }
   } catch(e) {
-    // Sessizce localStorage'a düş — kullanıcıya hata gösterme
-    loadFromStorage();
+    // Sessizce localStorage'a düş — zaten yüklü
   }
 }
 
