@@ -820,7 +820,7 @@ function updateSteps() {
   const hasLoc = !!(currentLocNo && currentLocName);
   const hasBarcode = !!currentBarcode;
   const hasPhoto = !!currentEqPhoto;
-  const canSave = hasLoc && hasBarcode && photoSaved;
+  const canSave = hasLoc && hasBarcode && hasPhoto && photoSaved;
 
   // Adım çubuğu
   document.getElementById('step1-bar').className = 'step ' + (hasLoc ? 'done' : 'active');
@@ -1004,6 +1004,7 @@ function makeThumb(dataUrl, maxSize, callback) {
 // ── KAYDET ────────────────────────────
 function doSave(withPhoto) {
   if (!currentBarcode) { showToast('⚠ Barkod gerekli!', true); return; }
+  if (!currentEqPhoto || !photoSaved) { showToast('⚠ Fotoğraf çekip kaydedin!', true); return; }
   const duplicateIdx = records.findIndex(r => r.barcode === currentBarcode);
   if (duplicateIdx !== -1) {
     if (!confirm('⚠ Bu barkod zaten kayıtlı!\n\n' + currentBarcode + '\n\nÖnceki kaydı silip yeni kayıt oluşturulsun mu?')) return;
