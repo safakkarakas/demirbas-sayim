@@ -1211,7 +1211,7 @@ async function uploadToDrive(dataUrl, filename) {
   if (!currentUser || !currentUser.token) throw new Error('Giriş yapılmamış');
 
   // Fotoğrafı sıkıştır
-  const compressed = await compressImage(dataUrl, 800, 0.60);
+  const compressed = await compressImage(dataUrl, 1920, 0.85);
   const base64 = compressed.split(',')[1];
   if (!base64) throw new Error('Fotoğraf verisi okunamadı');
 
