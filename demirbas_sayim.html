@@ -268,30 +268,7 @@
   .user-chip img { width: 22px; height: 22px; border-radius: 50%; }
   .user-chip span { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  .menu-btn { background: var(--accent); border: none; border-radius: var(--radius-sm); width: 36px; height: 36px; font-size: 20px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; letter-spacing: -2px; font-weight: 700; }
-  .menu-btn:active { background: var(--surface); }
-
-  .bottom-menu { display: none; position: fixed; inset: 0; z-index: 500; }
-  .bottom-menu.open { display: block; }
-  .bottom-menu-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); }
-  .bottom-menu-sheet {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    background: #ffffff; border-radius: 20px 20px 0 0; border-top: 3px solid var(--accent);
-    padding: 1rem 1.25rem 2.5rem;
-    animation: slideUp 0.25s cubic-bezier(0.4,0,0.2,1);
-  }
-  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-  .bottom-menu-title { font-size: 12px; color: var(--text2); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; text-align: center; }
-  .bm-btn { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; cursor: pointer; text-align: left; transition: background 0.15s; }
-  .bm-btn:active { background: var(--bg); }
-  .bm-btn.danger .bm-icon { color: var(--danger); }
-  .bm-btn.danger .bm-label { color: #C41E1E; font-weight: 700; }
-  .bm-btn:disabled { opacity: 0.3; pointer-events: none; }
-  .bm-icon { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
-  .bm-label { font-size: 15px; font-weight: 600; color: var(--text); font-family: 'Syne', sans-serif; }
-  .bm-sub { font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
-  .bm-cancel { width: 100%; background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; color: var(--text2); font-size: 14px; font-family: 'Syne', sans-serif; cursor: pointer; margin-top: 4px; }
-  .bm-cancel:active { background: var(--surface2); }
+ to { transform: translateY(0); } }
 </style>
 </head>
 <body>
@@ -330,32 +307,9 @@
     </div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
-    <button class="menu-btn" onclick="toggleMenu()" title="Menü">⋮</button>
   </div>
 </header>
 
-<!-- ALT MENÜ -->
-<div class="bottom-menu" id="bottom-menu">
-  <div class="bottom-menu-backdrop" onclick="toggleMenu()"></div>
-  <div class="bottom-menu-sheet">
-    <div class="bottom-menu-title">İşlemler</div>
-    <button class="bm-btn" id="export-btn" onclick="exportCSV();toggleMenu();" disabled>
-      <span class="bm-icon">⬇</span>
-      <div>
-        <div class="bm-label">CSV İndir</div>
-        <div class="bm-sub">Excel'de açılır</div>
-      </div>
-    </button>
-    <button class="bm-btn danger" id="clear-btn" onclick="clearAll()" disabled>
-      <span class="bm-icon">🗑</span>
-      <div>
-        <div class="bm-label">Tüm Kayıtları Sil</div>
-        <div class="bm-sub">Bu işlem geri alınamaz</div>
-      </div>
-    </button>
-    <button class="bm-cancel" onclick="toggleMenu()">İptal</button>
-  </div>
-</div>
 
 <div class="steps" id="steps-bar">
   <div class="step active" id="step1-bar"></div>
@@ -816,7 +770,6 @@ function signOut() {
   render();
   // user-chip kaldırıldı
   document.getElementById('login-screen').classList.remove('hide');
-  toggleMenu();
 }
 
 // BarcodeDetector
@@ -1471,24 +1424,12 @@ async function deleteRecord(id) {
   }
 }
 
-function toggleMenu() {
-  document.getElementById('bottom-menu').classList.toggle('open');
-}
 
-function clearAll() {
-  if (!confirm('Tüm kayıtlar silinecek. Emin misiniz?')) return;
-  records = [];
-  localStorage.removeItem(STORAGE_KEY);
-  render();
-  document.getElementById('bottom-menu').classList.remove('open');
-}
 
 // ── RENDER ────────────────────────────
 function render() {
   // stat-total kaldırıldı
   document.getElementById('rec-count').textContent = records.length + ' kayıt';
-  document.getElementById('export-btn').disabled = records.length === 0;
-  document.getElementById('clear-btn').disabled = records.length === 0;
 
   const list = document.getElementById('records-list');
   if (!records.length) {
@@ -1511,22 +1452,6 @@ function render() {
 }
 
 // ── CSV ───────────────────────────────
-function exportCSV() {
-  if (!records.length) return;
-  const BOM = '\uFEFF';
-  const cols = ['Sıra','Barkod','Lokasyon No','Lokasyon Adı','Açıklama','Fotoğraf Dosyası','Fotoğraf Var mı','Tarih','Saat'];
-  const rows = [...records].reverse().map((r,i) => [
-    i+1, r.barcode, r.locNo||'', r.locName||'', r.desc||'', r.photoName||'', r.photo?'Evet':'Hayır', r.date, r.time
-  ]);
-  const csv = [cols,...rows].map(row => row.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
-  const blob = new Blob([BOM+csv],{type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href=url; a.download='demirbaş_'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'-')+'.csv';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('✓ CSV indirildi');
-}
 
 // ── YARDIMCI ──────────────────────────
 function autoDownload(dataUrl, filename) {
