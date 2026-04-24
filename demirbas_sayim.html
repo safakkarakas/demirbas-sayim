@@ -108,12 +108,12 @@
 
   .bc-result {
     display: none; margin-top: 10px;
-    background: rgba(196,30,30,0.06); border: 1.5px solid rgba(196,30,30,0.25);
+    background: rgba(40,167,69,0.08); border: 1.5px solid rgba(40,167,69,0.3);
     border-radius: var(--radius-sm); padding: 11px 13px;
     align-items: center; gap: 10px;
   }
   .bc-result.show { display: flex; }
-  .bc-val { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--accent); word-break: break-all; }
+  .bc-val { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: #1a7a3a; word-break: break-all; }
   .bc-retry { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; color: var(--text2); font-size: 11px; font-family: 'JetBrains Mono', monospace; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
   .bc-retry:active { background: var(--surface2); }
 
@@ -391,8 +391,8 @@
 
   <!-- 04 — MALZEME ADI / NOT -->
   <div class="card dimmed" id="card-desc">
-    <div class="card-label">04 — Not (opsiyonel)</div>
-    <input type="text" id="desc-input" placeholder="Not..." autocomplete="off" />
+    <div class="card-label">04 — Malzeme Adı / Not <span class="req">*</span></div>
+    <input type="text" id="desc-input" placeholder="Malzeme adı / Not..." autocomplete="off" oninput="this.classList.remove('invalid')" />
   </div>
 
   <!-- FOTOĞRAF KAYDET -->
@@ -1075,6 +1075,7 @@ function setBarcodeFound(val) {
   document.getElementById('bc-val').textContent = val;
   document.getElementById('bc-result').classList.add('show');
   document.getElementById('bc-badge').textContent = '✓ Okundu';
+    document.getElementById('bc-badge').style.color = '#2de8a2';
   document.getElementById('manual-toggle').style.display = 'none';
   document.getElementById('manual-wrap').classList.remove('show');
   if (navigator.vibrate) navigator.vibrate(80);
@@ -1158,6 +1159,7 @@ function handleEqPhoto(e) {
     photoSaved = false;
     updateSteps();
     showToast('Not girebilirsiniz.', false, 3500);
+    document.getElementById('desc-input').focus();
   };
   reader.readAsDataURL(file);
 }
@@ -1166,10 +1168,8 @@ async function downloadCurrentPhoto() {
   if (!currentEqPhoto || !currentEqPhotoName) return;
   if (!currentBarcode) {
     showToast('⚠ Önce barkod girilmeli!', true);
-    // Overlay'i kapat, fotoğrafı sıfırla, kullanıcı barkod girebilsin
     document.getElementById('save-overlay').classList.remove('show');
-    photoSaved = true; // kilidi aç
-    // Fotoğrafı sıfırla — tekrar çekilecek
+    photoSaved = true;
     currentEqPhoto = null;
     currentEqThumb = null;
     currentEqPhotoName = '';
@@ -1185,6 +1185,15 @@ async function downloadCurrentPhoto() {
     updateSteps();
     return;
   }
+  // Not zorunlu kontrolü
+  const desc = document.getElementById('desc-input').value.trim();
+  if (!desc) {
+    showToast('⚠ Lütfen Not alanını doldurunuz!', true, 3000);
+    document.getElementById('desc-input').classList.add('invalid');
+    document.getElementById('desc-input').focus();
+    return;
+  }
+  document.getElementById('desc-input').classList.remove('invalid');
   const dlBtn = document.getElementById('dl-btn');
   dlBtn.disabled = true;
   dlBtn.textContent = '⏳ Drive\'a yükleniyor...';
