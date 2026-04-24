@@ -386,7 +386,7 @@
       <div class="photo-badge green" id="eq-badge" style="display:none;">✓ Çekildi</div>
     </div>
     <div class="photo-fname" id="eq-fname"></div>
-    <input type="file" id="eq-file" accept="image/*" capture="environment" style="display:none;" onchange="handleEqPhoto(event)" />
+    <input type="file" id="eq-file" accept="image/*" style="display:none;" onchange="handleEqPhoto(event)" />
   </div>
 
   <!-- 04 — MALZEME ADI / NOT -->
@@ -1274,6 +1274,8 @@ function makeThumb(dataUrl, maxSize, callback) {
 async function doSave(withPhoto) {
   if (!currentBarcode) { showToast('⚠ Barkod gerekli!', true); return; }
   if (!currentEqPhoto || !photoSaved) { showToast('⚠ Fotoğraf yükleyin!', true); return; }
+  if (!currentDriveUrl) { showToast('⚠ Fotoğraf Drive\'a yüklenmedi!', true); return; }
+  if (!currentEqPhotoName) { showToast('⚠ Fotoğraf adı eksik!', true); return; }
 
   const locNo   = currentLocNo;
   const locName = currentLocName;
