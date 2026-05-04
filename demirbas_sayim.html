@@ -229,18 +229,6 @@
 
   .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(90px); background: var(--accent); color: #ffffff; padding: 10px 22px; border-radius: 50px; font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace; z-index: 999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); pointer-events: none; max-width: 88vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.warn { background: var(--warn); color: #1a1200; }
-
-  /* iOS SEÇİM SHEET */
-  .ios-sheet { display: none; position: fixed; inset: 0; z-index: 600; }
-  .ios-sheet.open { display: block; }
-  .ios-sheet-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
-  .ios-sheet-inner { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 20px 20px 0 0; padding: 1rem 1rem 2rem; animation: slideUp 0.25s cubic-bezier(0.4,0,0.2,1); }
-  .ios-sheet-title { text-align: center; font-size: 12px; color: #999; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
-  .ios-sheet-btn { width: 100%; padding: 15px; background: #f5f5f5; border: none; border-radius: 12px; font-size: 16px; font-family: 'Syne', sans-serif; font-weight: 600; color: #1a1a1a; cursor: pointer; margin-bottom: 10px; text-align: left; display: block; }
-  .ios-sheet-btn:active { background: #e8e8e8; }
-  .ios-sheet-cancel { width: 100%; padding: 14px; background: none; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; font-family: 'Syne', sans-serif; color: #C41E1E; cursor: pointer; margin-top: 4px; font-weight: 600; }
-  .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.warn { background: var(--warn); color: #ffffff; }
 
   /* GİRİŞ EKRANI */
@@ -291,6 +279,7 @@
   <div class="login-card">
     <div class="login-title">Demirbaş Sayımı</div>
     <div class="login-sub">Devam etmek için Google hesabınızla giriş yapın</div>
+    <div style="font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace;margin-top:0.75rem;opacity:0.6;" id="login-version"></div>
     <button class="login-btn" onclick="signIn()">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#fff" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#fff" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#fff" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#fff" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
       Google ile Giriş Yap
@@ -361,7 +350,7 @@
       ℹ Bu tarayıcıda otomatik barkod okuma desteklenmiyor.<br>
       Lütfen barkodu manuel olarak girin.
     </div>
-    <div class="photo-zone" id="bc-zone" onclick="openBcCamera()">
+    <div class="photo-zone" id="bc-zone" onclick="document.getElementById('bc-file').click()">
       <div class="ph" id="bc-ph">
         <span class="ph-icon">🔍</span>
         <div class="ph-text">Barkod etiketini fotoğrafla</div>
@@ -388,7 +377,7 @@
       <span>03 — Ekipman Fotoğrafı</span>
       <div class="check" id="check-photo">✓</div>
     </div>
-    <div class="photo-zone accent2-border" onclick="openEqCamera()">
+    <div class="photo-zone accent2-border" onclick="document.getElementById('eq-file').click()">
       <div class="ph" id="eq-ph">
         <span class="ph-icon">📷</span>
         <div class="ph-text">Ekipmanı fotoğrafla</div>
@@ -428,21 +417,6 @@
 
 </div>
 
-<!-- iOS FOTOĞRAF SEÇİM SHEET -->
-<div class="ios-sheet" id="ios-sheet">
-  <div class="ios-sheet-backdrop" onclick="closeIosSheet()"></div>
-  <div class="ios-sheet-inner">
-    <div class="ios-sheet-title" id="ios-sheet-title">Fotoğraf</div>
-    <button class="ios-sheet-btn" onclick="iosChooseCamera()">📷 Kamera ile Çek</button>
-    <button class="ios-sheet-btn" onclick="iosChooseGallery()">🖼 Galeriden Seç</button>
-    <button class="ios-sheet-cancel" onclick="closeIosSheet()">İptal</button>
-  </div>
-</div>
-
-<!-- Gizli iOS input'ları -->
-<input type="file" id="ios-camera-input" accept="image/*" capture="environment" style="display:none;" />
-<input type="file" id="ios-gallery-input" accept="image/*" style="display:none;" />
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -451,80 +425,9 @@ const STORAGE_KEY    = 'demirbaş_records_v1';
 const MAX_THUMB_SIZE = 320;
 const API_URL        = 'https://script.google.com/macros/s/AKfycbzDdL1aCOXwD3x6eVuQdrqnVqJtJmiTO7kP2c1q1d8gykg6mNmFYqR1EJay2BSONQ4iwA/exec';
 const DRIVE_FOLDER_ID = '1723LUS6r-FfI62nbDLVcyKK7m9VH4iRa';
-
-// localStorage + sessionStorage fallback (Safari ITP için)
-function saveUser(user) {
-  try { localStorage.setItem('ks_user', JSON.stringify(user)); } catch(e) {}
-  try { sessionStorage.setItem('ks_user', JSON.stringify(user)); } catch(e) {}
-}
-
-function loadUser() {
-  try {
-    const ls = localStorage.getItem('ks_user');
-    if (ls) return JSON.parse(ls);
-  } catch(e) {}
-  try {
-    const ss = sessionStorage.getItem('ks_user');
-    if (ss) return JSON.parse(ss);
-  } catch(e) {}
-  return null;
-}
-
-// iOS tespiti
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-let currentIosTarget = 'bc';
-
-function removeUser() {
-  try { localStorage.removeItem('ks_user'); } catch(e) {}
-  try { sessionStorage.removeItem('ks_user'); } catch(e) {}
-}
-
-function openBcCamera() {
-  if (isIOS) {
-    currentIosTarget = 'bc';
-    document.getElementById('ios-sheet-title').textContent = 'Barkod Fotoğrafı';
-    document.getElementById('ios-sheet').classList.add('open');
-  } else {
-    const input = document.getElementById('bc-file');
-    input.setAttribute('capture', 'environment');
-    input.click();
-  }
-}
-
-function openEqCamera() {
-  if (isIOS) {
-    currentIosTarget = 'eq';
-    document.getElementById('ios-sheet-title').textContent = 'Ekipman Fotoğrafı';
-    document.getElementById('ios-sheet').classList.add('open');
-  } else {
-    const input = document.getElementById('eq-file');
-    input.setAttribute('capture', 'environment');
-    input.click();
-  }
-}
-
-function closeIosSheet() {
-  document.getElementById('ios-sheet').classList.remove('open');
-}
-
-function iosChooseCamera() {
-  closeIosSheet();
-  const input = document.getElementById('ios-camera-input');
-  input.setAttribute('capture', 'environment');
-  input.onchange = (e) => currentIosTarget === 'bc' ? handleBcPhoto(e) : handleEqPhoto(e);
-  input.value = '';
-  setTimeout(() => input.click(), 100);
-}
-
-function iosChooseGallery() {
-  closeIosSheet();
-  const input = document.getElementById('ios-gallery-input');
-  input.onchange = (e) => currentIosTarget === 'bc' ? handleBcPhoto(e) : handleEqPhoto(e);
-  input.value = '';
-  setTimeout(() => input.click(), 100);
-}
 // Google OAuth Client ID — aşağıdaki adımda oluşturulacak
 const GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
+const APP_VERSION = 'v2026.05.04.01';
 
 // ── KULLANICI STATE ─────────────────────
 let currentUser = null;   // { email, name, picture, token }
@@ -745,7 +648,7 @@ let currentDriveUrl = '';       // Drive'a yüklenen fotoğrafın URL'i
 let detector = null;
 
 // ── INIT ───────────────────────────────
-document.getElementById('header-date').textContent = new Date().toLocaleDateString('tr-TR', {
+document.getElementById('header-date').textContent = APP_VERSION + '  •  ' + new Date().toLocaleDateString('tr-TR', {
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
 });
 
@@ -755,10 +658,10 @@ sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
 // Google Identity başlat
 function initAuth() {
   try {
-    const saved = loadUser();
+    const saved = localStorage.getItem('ks_user');
     if (saved) {
-      const user = saved;
-      if (user && user.email && user.name) {
+      const user = JSON.parse(saved);
+      if (user.email && user.name) {
         currentUser = user;
         onLoginSuccess();
         return;
@@ -811,7 +714,7 @@ async function handleTokenResponse(tokenResponse) {
     // Token süresi: 1 saat (access token), kullanıcı bilgisi: 30 gün
     currentUser.tokenExpiry = Date.now() + (tokenResponse.expires_in || 3600) * 1000;
     currentUser.expiry = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 gün
-    saveUser(currentUser);
+    localStorage.setItem('ks_user', JSON.stringify(currentUser));
     onLoginSuccess();
   } catch(e) {
     document.getElementById('login-err').textContent = 'Kullanıcı bilgisi alınamadı.';
@@ -848,7 +751,7 @@ function silentRefreshToken() {
         if (tokenResponse && tokenResponse.access_token) {
           currentUser.token      = tokenResponse.access_token;
           currentUser.tokenExpiry = Date.now() + (tokenResponse.expires_in || 3600) * 1000;
-          saveUser(currentUser);
+          localStorage.setItem('ks_user', JSON.stringify(currentUser));
         }
       }
     });
@@ -859,7 +762,7 @@ function silentRefreshToken() {
 }
 
 function signOut() {
-  removeUser();
+  localStorage.removeItem('ks_user');
   currentUser = null;
   records = [];
   render();
@@ -1582,6 +1485,8 @@ function showToast(msg, warn, dur) {
 
 render();
 updateSteps();
+const lv = document.getElementById('login-version');
+if (lv) lv.textContent = APP_VERSION;
 initAuth();
 </script>
 </body>
