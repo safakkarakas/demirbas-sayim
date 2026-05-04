@@ -424,6 +424,19 @@ const STORAGE_KEY    = 'demirbaş_records_v1';
 const MAX_THUMB_SIZE = 320;
 const API_URL        = 'https://script.google.com/macros/s/AKfycbzDdL1aCOXwD3x6eVuQdrqnVqJtJmiTO7kP2c1q1d8gykg6mNmFYqR1EJay2BSONQ4iwA/exec';
 const DRIVE_FOLDER_ID = '1723LUS6r-FfI62nbDLVcyKK7m9VH4iRa';
+
+// iOS tespiti — iPhone/iPad'de capture davranışı farklı
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+// iOS'ta capture kaldır — aksi halde kamera açılmıyor
+if (isIOS) {
+  document.addEventListener('DOMContentLoaded', () => {
+    const bcFile = document.getElementById('bc-file');
+    const eqFile = document.getElementById('eq-file');
+    if (bcFile) bcFile.removeAttribute('capture');
+    if (eqFile) eqFile.removeAttribute('capture');
+  });
+}
 // Google OAuth Client ID — aşağıdaki adımda oluşturulacak
 const GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
 
