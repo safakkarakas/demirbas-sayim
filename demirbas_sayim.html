@@ -429,7 +429,7 @@ const API_URL        = 'https://script.google.com/macros/s/AKfycbzDdL1aCOXwD3x6e
 const DRIVE_FOLDER_ID = '1723LUS6r-FfI62nbDLVcyKK7m9VH4iRa';
 // Google OAuth Client ID — aşağıdaki adımda oluşturulacak
 const GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-const APP_VERSION = 'v2026.05.06.02';
+const APP_VERSION = 'v2026.05.06.03';
 
 // ── KULLANICI STATE ─────────────────────
 let currentUser = null;   // { email, name, picture, token }
@@ -650,9 +650,7 @@ let currentDriveUrl = '';       // Drive'a yüklenen fotoğrafın URL'i
 let detector = null;
 
 // ── INIT ───────────────────────────────
-document.getElementById('header-date').textContent = APP_VERSION + '  •  ' + new Date().toLocaleDateString('tr-TR', {
-  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-});
+document.getElementById('header-date').textContent = APP_VERSION;
 
 // Oturum ID oluştur
 sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
