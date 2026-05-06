@@ -309,6 +309,7 @@
     </div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+    <button onclick="signOut()" style="background:none;border:1px solid rgba(196,30,30,0.3);border-radius:8px;padding:6px 12px;color:var(--accent);font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:600;cursor:pointer;">Çıkış</button>
   </div>
 </header>
 
@@ -428,7 +429,7 @@ const API_URL        = 'https://script.google.com/macros/s/AKfycbzDdL1aCOXwD3x6e
 const DRIVE_FOLDER_ID = '1723LUS6r-FfI62nbDLVcyKK7m9VH4iRa';
 // Google OAuth Client ID — aşağıdaki adımda oluşturulacak
 const GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-const APP_VERSION = 'v2026.05.06.01';
+const APP_VERSION = 'v2026.05.06.02';
 
 // ── KULLANICI STATE ─────────────────────
 let currentUser = null;   // { email, name, picture, token }
@@ -763,12 +764,10 @@ function silentRefreshToken() {
 }
 
 function signOut() {
+  if (!confirm('Çıkış yapmak istiyor musunuz?\nSayfа yenilenecek ve son versiyon yüklenecek.')) return;
   localStorage.removeItem('ks_user');
-  currentUser = null;
-  records = [];
-  render();
-  // user-chip kaldırıldı
-  document.getElementById('login-screen').classList.remove('hide');
+  // Sayfayı cache'siz yenile — son versiyonu yükler
+  window.location.reload(true);
 }
 
 // BarcodeDetector
