@@ -18,7 +18,7 @@
   --shadow:0 1px 4px rgba(0,0,0,0.08);
 }
 * { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:var(--sans); background:var(--bg); color:var(--text); min-height:100vh; font-size:14px; }
+body { font-family:var(--sans); background:var(--bg); color:var(--text); height:100vh; font-size:14px; display:flex; flex-direction:column; overflow:hidden; }
 ::-webkit-scrollbar { width:4px; }
 ::-webkit-scrollbar-track { background:var(--surface2); }
 ::-webkit-scrollbar-thumb { background:var(--surface3); border-radius:2px; }
@@ -37,7 +37,7 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); min-hei
 .login-err.show { display:block; }
 
 /* HEADER */
-header { background:var(--surface); border-bottom:2px solid var(--accent); padding:0 1.25rem; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(196,30,30,0.07); }
+header { background:var(--surface); border-bottom:2px solid var(--accent); padding:0 1.25rem; height:52px; display:flex; align-items:center; justify-content:space-between; z-index:100; box-shadow:0 2px 8px rgba(196,30,30,0.07); flex-shrink:0; }
 .h-left { display:flex; align-items:center; gap:12px; }
 .h-left img { height:34px; object-fit:contain; }
 .h-title { font-size:12px; font-weight:700; color:var(--accent); font-family:var(--mono); text-transform:uppercase; letter-spacing:0.1em; }
@@ -58,14 +58,14 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 .dropdown-divider { height:1px; background:var(--border); }
 
 /* PROGRESS */
-.progress-bar { height:34px; background:var(--surface); border-bottom:1px solid var(--border); padding:0 1.25rem; display:none; align-items:center; gap:12px; }
+.progress-bar { height:34px; background:var(--surface); border-bottom:1px solid var(--border); padding:0 1.25rem; display:none; align-items:center; gap:12px; flex-shrink:0; }
 .progress-bar.show { display:flex; }
 .p-track { flex:1; height:4px; background:var(--surface3); border-radius:2px; overflow:hidden; }
 .p-fill { height:100%; background:var(--green); border-radius:2px; transition:width 0.5s; }
 .p-label { font-size:11px; font-family:var(--mono); color:var(--text2); white-space:nowrap; }
 
 /* LAYOUT */
-.app { display:none; height:calc(100vh - 138px); grid-template-columns:1fr 1fr; }
+.app { display:none; flex:1; grid-template-columns:1fr 1fr; overflow:hidden; }
 .app.show { display:grid; }
 
 /* SOL: FOTOĞRAF */
@@ -130,7 +130,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 .divider { height:1px; background:var(--border); margin:10px 0; }
 
 /* FOOTER BUTONLAR */
-.action-footer { display:none; height:52px; background:var(--surface); border-top:1px solid var(--border); padding:0 1.25rem; align-items:center; gap:8px; box-shadow:0 -2px 8px rgba(0,0,0,0.04); }
+.action-footer { display:none; height:52px; background:var(--surface); border-top:1px solid var(--border); padding:0 1.25rem; align-items:center; gap:8px; box-shadow:0 -2px 8px rgba(0,0,0,0.04); flex-shrink:0; z-index:50; }
 .action-footer.show { display:flex; }
 .btn-next { flex:1; height:36px; background:var(--surface2); border:1px solid var(--border2); border-radius:var(--radius-sm); color:var(--text2); font-size:12px; font-weight:600; font-family:var(--mono); cursor:pointer; transition:all 0.15s; }
 .btn-next:hover { background:var(--surface3); color:var(--text); }
@@ -189,8 +189,12 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 </header>
 
 <div class="progress-bar" id="progress-bar">
-  <span class="p-label" id="progress-label">—</span>
-  <div class="p-track"><div class="p-fill" id="p-fill" style="width:0%"></div></div>
+  <span class="p-label" id="p-bekleyen" style="color:var(--text2);">— bekliyor</span>
+  <span style="color:var(--border2);">|</span>
+  <span class="p-label" id="p-atlanan" style="color:var(--orange);">— atlandı</span>
+  <span style="color:var(--border2);">|</span>
+  <span class="p-label" id="p-eslesen" style="color:var(--green);">— eşleşti</span>
+  <div class="p-track" style="margin-left:8px;"><div class="p-fill" id="p-fill" style="width:0%"></div></div>
 </div>
 
 <div class="app" id="app">
@@ -230,7 +234,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.07.06';
+var APP_VERSION = 'v2026.05.07.07';
 var API_URL = 'https://script.google.com/macros/s/AKfycby-qAESYDXYAkOMN8sXYTl7F3HmdNwikz9b4VYJdK7Vk4NV8J2R3gIwPh1LLexln4f_/exec';
 var SKIP_KEY = 'eslesme_skipped';
 
@@ -242,6 +246,7 @@ var ifsResults = [];
 var ifsIndex = 0;
 var selectedIfsRecord = null;
 var skippedIds = [];      // atlanan kayıt id'leri (localStorage'da saklanır)
+var eslenenSayisi = 0;    // bu oturumda eşleştirilen sayısı
 
 // Versiyon numarasını tek yerden yaz
 document.getElementById('h-version').textContent = APP_VERSION;
@@ -555,6 +560,7 @@ async function eslestir() {
     });
     var data = await resp.json();
     if (!data.success) throw new Error(data.error || 'Hata');
+    eslenenSayisi++;
     showToast('Eşleştirme kaydedildi', 'green');
     // Eşleştirilen kaydı hem allRecords hem sayimRecords'dan çıkar
     allRecords = allRecords.filter(function(r) { return r.id !== sr.id; });
@@ -575,11 +581,14 @@ function nextRecord() {
 }
 
 function updateProgress() {
-  var n = sayimRecords.length;
-  var s = skippedIds.length;
-  var label = n === 0 ? 'Tümü eşleştirildi ✓' : n + ' kayıt bekliyor' + (s > 0 ? '  •  ' + s + ' atlandı' : '');
-  document.getElementById('progress-label').textContent = label;
-  document.getElementById('p-fill').style.width = n === 0 ? '100%' : '30%';
+  var bekleyen = sayimRecords.length;
+  var atlanan  = skippedIds.length;
+  document.getElementById('p-bekleyen').textContent = bekleyen + ' bekliyor';
+  document.getElementById('p-atlanan').textContent  = atlanan  + ' atlandı';
+  document.getElementById('p-eslesen').textContent  = eslenenSayisi + ' eşleşti';
+  var total = bekleyen + atlanan + eslenenSayisi;
+  var pct   = total > 0 ? Math.round(eslenenSayisi / total * 100) : 0;
+  document.getElementById('p-fill').style.width = pct + '%';
 }
 
 function getDriveThumbUrl(url) {
