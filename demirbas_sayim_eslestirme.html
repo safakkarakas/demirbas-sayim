@@ -154,7 +154,7 @@
   <div class="header-left">
     <div>
       <div class="header-title">Demirbaş Eşleştirme</div>
-      <div class="header-version">v2026.05.07.01</div>
+      <div class="header-version">v2026.05.07.02</div>
     </div>
   </div>
   <div class="header-right">
@@ -219,7 +219,7 @@
 
 <script>
 const GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-const APP_VERSION = 'v2026.05.07.01';
+const APP_VERSION = 'v2026.05.04.01';
 
 // Apps Script URL — deploy ettikten sonra buraya yapıştırın
 const API_URL = 'https://script.google.com/macros/s/AKfycby-qAESYDXYAkOMN8sXYTl7F3HmdNwikz9b4VYJdK7Vk4NV8J2R3gIwPh1LLexln4f_/exec';
@@ -313,7 +313,12 @@ async function showRecord(idx) {
   // Fotoğraf
   const photoEl = document.getElementById('photo-container');
   if (r.fotoUrl) {
-    photoEl.innerHTML = `<img src="${r.fotoUrl}" alt="Sayım fotoğrafı" onerror="this.parentElement.innerHTML='<div class=\\'photo-placeholder\\'>🖼</div>'" />`;
+    // Drive URL'ini direkt görüntüleme linkine çevir
+    const driveUrl = getDriveThumbUrl(r.fotoUrl);
+    photoEl.innerHTML = `<a href="${r.fotoUrl}" target="_blank" title="Büyük görmek için tıklayın">
+      <img src="${driveUrl}" alt="Sayım fotoğrafı" style="cursor:pointer;"
+        onerror="this.parentElement.outerHTML='<div style=\'text-align:center;padding:1rem;\'><a href=\"${r.fotoUrl}\" target=\"_blank\" style=\"color:var(--accent);font-size:12px;font-family:JetBrains Mono,monospace;\">📎 Fotoğrafı Drive\'da Aç</a></div>'" />
+    </a>`;
   } else {
     photoEl.innerHTML = '<div class="photo-placeholder">📷</div>';
   }
@@ -563,6 +568,15 @@ function updateProgress() {
 }
 
 // ── YARDIMCI ────────────────────────────────────────────
+function getDriveThumbUrl(url) {
+  // https://drive.google.com/file/d/FILE_ID/view → thumbnail URL
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) {
+    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+  }
+  return url;
+}
+
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
