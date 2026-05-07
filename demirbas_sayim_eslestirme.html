@@ -65,7 +65,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 .p-label { font-size:11px; font-family:var(--mono); color:var(--text2); white-space:nowrap; }
 
 /* LAYOUT */
-.app { display:none; height:calc(100vh - 86px); grid-template-columns:1fr 1fr; }
+.app { display:none; height:calc(100vh - 138px); grid-template-columns:1fr 1fr; }
 .app.show { display:grid; }
 
 /* SOL: FOTOĞRAF */
@@ -230,7 +230,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.07.05';
+var APP_VERSION = 'v2026.05.07.06';
 var API_URL = 'https://script.google.com/macros/s/AKfycby-qAESYDXYAkOMN8sXYTl7F3HmdNwikz9b4VYJdK7Vk4NV8J2R3gIwPh1LLexln4f_/exec';
 var SKIP_KEY = 'eslesme_skipped';
 
@@ -383,7 +383,7 @@ async function showRecord(idx) {
 
   // Sayım paneli
   document.getElementById('sayim-panel').innerHTML =
-    '<div class="data-grid">' +
+    '<div class="data-grid" style="grid-template-columns:1fr;">' +
       '<div><div class="di-label">Barkod</div><div class="di-value accent">' + esc(r.barkod) + '</div></div>' +
       '<div><div class="di-label">Lokasyon No</div><div class="di-value">' + esc(r.lokNo) + '</div></div>' +
       '<div class="di-full"><div class="di-label">Lokasyon Adı</div><div class="di-value">' + esc(r.lokAdi) + '</div></div>' +
