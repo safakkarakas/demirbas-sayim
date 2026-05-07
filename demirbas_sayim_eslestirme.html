@@ -69,9 +69,9 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 .app.show { display:grid; }
 
 /* SOL: FOTOĞRAF */
-.col-photo { border-right:1px solid var(--border); display:flex; flex-direction:column; background:var(--surface); }
-.photo-wrap { flex:1; display:flex; align-items:center; justify-content:center; background:#f8f8f8; overflow:hidden; }
-.photo-wrap img { max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in; transition:transform 0.2s; }
+.col-photo { border-right:1px solid var(--border); display:flex; flex-direction:column; background:var(--surface); overflow:hidden; min-height:0; }
+.photo-wrap { flex:1; display:flex; align-items:center; justify-content:center; background:#f8f8f8; overflow:hidden; min-height:0; position:relative; }
+.photo-wrap img { width:100%; height:100%; object-fit:contain; cursor:zoom-in; transition:transform 0.2s; position:absolute; top:0; left:0; }
 .photo-wrap img:hover { transform:scale(1.02); }
 .photo-empty { color:var(--text3); font-size:48px; }
 .photo-footer { padding:8px 14px; border-top:1px solid var(--border); background:var(--surface); }
@@ -234,7 +234,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.07.10';
+var APP_VERSION = 'v2026.05.08.01';
 var API_URL = 'https://script.google.com/macros/s/AKfycbygmkAv_oztdG_-XI3Iv5Z86PN_6oCjMaSWfT2ziHKeyRDGLMh8LuKAgEZX-Nb2QNko/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
