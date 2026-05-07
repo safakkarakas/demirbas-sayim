@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Demirbaş Eşleştirme</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #f5f5f5;
+    --accent: #C41E1E;
+    --green: #1a7a3a;
+    --green-light: rgba(26,122,58,0.08);
+    --orange: #e07b00;
+    --text: #1a1a1a;
+    --text2: #666;
+    --border: rgba(0,0,0,0.1);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--surface); border-bottom: 2px solid var(--accent);
+    padding: 0.6rem 1.5rem; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(196,30,30,0.08);
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-left img { height: 36px; object-fit: contain; }
+  .header-title { font-size: 13px; font-weight: 700; color: var(--accent); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+  .header-version { font-size: 10px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .user-info { font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+  .btn-sm { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; font-size: 11px; font-family: 'JetBrains Mono', monospace; cursor: pointer; font-weight: 600; }
+  .btn-sm.danger { border-color: rgba(196,30,30,0.3); color: var(--accent); }
+  .btn-sm:hover { background: var(--surface2); }
+
+  /* PROGRESS BAR */
+  .progress-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.5rem 1.5rem; display: flex; align-items: center; gap: 12px; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text2); }
+  .progress-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.4s; }
+  .progress-nums { white-space: nowrap; }
+
+  /* GİRİŞ EKRANI */
+  .login-screen { position: fixed; inset: 0; z-index: 900; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; }
+  .login-screen.hide { display: none; }
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem 1.5rem; width: 100%; max-width: 360px; text-align: center; }
+  .login-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .login-sub { font-size: 12px; color: var(--text2); font-family: 'JetBrains Mono', monospace; margin-bottom: 1.5rem; }
+  .login-btn { width: 100%; padding: 13px; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-size: 15px; font-weight: 700; font-family: 'Syne', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .login-err { font-size: 12px; color: var(--accent); margin-top: 1rem; display: none; }
+  .login-err.show { display: block; }
+
+  /* ANA LAYOUT */
+  .main { display: none; padding: 1rem 1.5rem; gap: 1rem; }
+  .main.show { display: grid; grid-template-columns: 280px 1fr 1fr; grid-template-rows: auto; }
+
+  /* PANEL */
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .panel-header { padding: 0.6rem 1rem; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--border); }
+  .panel-header.blue { color: #2563eb; background: rgba(37,99,235,0.05); }
+  .panel-header.green { color: var(--green); background: var(--green-light); }
+  .panel-header.red { color: var(--accent); background: rgba(196,30,30,0.05); }
+  .panel-body { padding: 1rem; }
+
+  /* FOTOĞRAF PANELİ */
+  .photo-container { width: 100%; aspect-ratio: 4/3; background: var(--surface2); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .photo-container img { width: 100%; height: 100%; object-fit: contain; }
+  .photo-placeholder { font-size: 40px; opacity: 0.3; }
+  .photo-meta { margin-top: 10px; font-size: 10px; color: var(--text2); font-family: 'JetBrains Mono', monospace; line-height: 1.7; }
+
+  /* VERİ ALANLARI */
+  .field-row { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+  .field-label { font-size: 9px; font-family: 'JetBrains Mono', monospace; color: var(--text2); text-transform: uppercase; letter-spacing: 0.1em; }
+  .field-value { font-size: 13px; font-weight: 600; color: var(--text); word-break: break-all; min-height: 20px; }
+  .field-value.empty { color: var(--text2); font-weight: 400; font-style: italic; font-size: 12px; }
+  .field-value.highlight { color: var(--green); }
+  .field-value.mismatch { color: var(--orange); }
+
+  /* ARAMA */
+  .search-wrap { margin-bottom: 12px; }
+  .search-label { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .search-row { display: flex; gap: 6px; }
+  .search-input { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'Syne', sans-serif; outline: none; background: var(--surface2); }
+  .search-input:focus { border-color: var(--accent); }
+  .search-btn { padding: 8px 14px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; font-family: 'Syne', sans-serif; cursor: pointer; white-space: nowrap; }
+  .search-btn:active { opacity: 0.85; }
+
+  /* IFS SONUÇ NAVİGASYONU */
+  .ifs-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .nav-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .nav-btn:hover { background: var(--surface2); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .nav-info { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text2); }
+
+  /* DURUM ETIKETI */
+  .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-family: 'JetBrains Mono', monospace; font-weight: 600; margin-bottom: 10px; }
+  .status-badge.matched { background: var(--green-light); color: var(--green); }
+  .status-badge.unmatched { background: rgba(224,123,0,0.08); color: var(--orange); }
+
+  /* AKSIYON BUTONLARI */
+  .action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 1rem 1.5rem 1.5rem; }
+  .btn-action { padding: 14px; border-radius: var(--radius); border: none; font-size: 15px; font-weight: 700; font-family: 'Syne', sans-serif; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+  .btn-action:active { transform: scale(0.98); opacity: 0.85; }
+  .btn-action.next { background: var(--surface); border: 1.5px solid var(--border); color: var(--text); }
+  .btn-action.match { background: var(--green); color: #fff; }
+  .btn-action:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* BOŞ DURUM */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* YÜKLEME */
+  .loading { text-align: center; padding: 2rem; color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 12px; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(90px); background: var(--text); color: #fff; padding: 10px 22px; border-radius: 50px; font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace; z-index: 999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); pointer-events: none; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.green { background: var(--green); }
+  .toast.warn { background: var(--orange); }
+  .toast.err { background: var(--accent); }
+
+  .divider { height: 1px; background: var(--border); margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<!-- GİRİŞ EKRANI -->
+<div class="login-screen" id="login-screen">
+  <div style="text-align:center;">
+    <div style="font-size:13px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Demirbaş Eşleştirme</div>
+    <div style="font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace;">v2026.05.04.01</div>
+  </div>
+  <div class="login-card">
+    <div class="login-title">Giriş Yap</div>
+    <div class="login-sub">Google hesabınızla devam edin</div>
+    <button class="login-btn" onclick="signIn()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#fff" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#fff" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#fff" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#fff" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      Google ile Giriş Yap
+    </button>
+    <div class="login-err" id="login-err">Giriş başarısız.</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <div>
+      <div class="header-title">Demirbaş Eşleştirme</div>
+      <div class="header-version">v2026.05.07.01</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="user-info" id="user-info"></span>
+    <button class="btn-sm danger" onclick="signOut()">Çıkış</button>
+  </div>
+</header>
+
+<!-- PROGRESS -->
+<div class="progress-bar" id="progress-bar" style="display:none;">
+  <span class="progress-nums" id="progress-nums">0 / 0</span>
+  <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <span id="progress-pct" style="white-space:nowrap;">%0</span>
+</div>
+
+<!-- ANA İÇERİK -->
+<div class="main" id="main-content">
+
+  <!-- SOL: FOTOĞRAF PANELİ -->
+  <div>
+    <div class="panel">
+      <div class="panel-header blue">📷 Sayım Fotoğrafı</div>
+      <div class="panel-body">
+        <div class="photo-container" id="photo-container">
+          <div class="photo-placeholder">📷</div>
+        </div>
+        <div class="photo-meta" id="photo-meta"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORTA: SAYIM VERİLERİ -->
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <div class="panel" style="flex:1;">
+      <div class="panel-header red">📋 Sayım Verisi</div>
+      <div class="panel-body" id="sayim-panel">
+        <div class="loading">Kayıtlar yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAĞ: IFS VERİLERİ -->
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <div class="panel" style="flex:1;">
+      <div class="panel-header green">🏭 IFS Verisi</div>
+      <div class="panel-body" id="ifs-panel">
+        <div class="loading" id="ifs-loading" style="display:none;">Aranıyor...</div>
+        <div id="ifs-content"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- AKSİYON BUTONLARI -->
+<div class="action-bar" id="action-bar" style="display:none;">
+  <button class="btn-action next" onclick="nextRecord()" id="btn-next">⏭ Sonraki Kayıt</button>
+  <button class="btn-action match" onclick="eslestir()" id="btn-match" disabled>✓ Eşleştir</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
+const APP_VERSION = 'v2026.05.04.01';
+
+// Apps Script URL — deploy ettikten sonra buraya yapıştırın
+const API_URL = 'https://script.google.com/macros/s/AKfycby-qAESYDXYAkOMN8sXYTl7F3HmdNwikz9b4VYJdK7Vk4NV8J2R3gIwPh1LLexln4f_/exec';
+
+let currentUser = null;
+let sayimRecords = [];
+let currentIndex = 0;
+let ifsResults = [];
+let ifsIndex = 0;
+let selectedIfsRecord = null;
+
+// ── AUTH ─────────────────────────────────────────────────
+function signIn() {
+  if (typeof google === 'undefined') return;
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+    callback: handleTokenResponse
+  });
+  tokenClient.requestAccessToken();
+}
+
+async function handleTokenResponse(tokenResponse) {
+  if (tokenResponse.error) {
+    document.getElementById('login-err').textContent = 'Giriş başarısız: ' + tokenResponse.error;
+    document.getElementById('login-err').classList.add('show');
+    return;
+  }
+  try {
+    const res  = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
+    });
+    const info = await res.json();
+    currentUser = { email: info.email, name: info.name, token: tokenResponse.access_token };
+    currentUser.expiry = Date.now() + (tokenResponse.expires_in || 3600) * 1000;
+    localStorage.setItem('eslesme_user', JSON.stringify(currentUser));
+    onLoginSuccess();
+  } catch(e) {
+    document.getElementById('login-err').textContent = 'Kullanıcı bilgisi alınamadı.';
+    document.getElementById('login-err').classList.add('show');
+  }
+}
+
+function onLoginSuccess() {
+  document.getElementById('login-screen').classList.add('hide');
+  document.getElementById('user-info').textContent = currentUser.name;
+  document.getElementById('main-content').classList.add('show');
+  document.getElementById('action-bar').style.display = 'grid';
+  document.getElementById('progress-bar').style.display = 'flex';
+  loadSayimRecords();
+}
+
+function signOut() {
+  if (!confirm('Çıkış yapmak istiyor musunuz?')) return;
+  localStorage.removeItem('eslesme_user');
+  window.location.reload(true);
+}
+
+// ── VERİ YÜKLEME ─────────────────────────────────────────
+async function loadSayimRecords() {
+  try {
+    const res  = await fetch(API_URL + '?action=getSayimRecords');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    sayimRecords = data.records || [];
+    currentIndex = 0;
+    updateProgress();
+    if (sayimRecords.length === 0) {
+      showEmptyState();
+    } else {
+      showRecord(0);
+    }
+  } catch(e) {
+    document.getElementById('sayim-panel').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div>Kayıtlar yüklenemedi:<br>${e.message}</div>`;
+  }
+}
+
+function showEmptyState() {
+  document.getElementById('sayim-panel').innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div>Eşleştirilecek kayıt kalmadı!</div>`;
+  document.getElementById('ifs-content').innerHTML = '';
+  document.getElementById('photo-container').innerHTML = '<div class="photo-placeholder">✅</div>';
+  document.getElementById('btn-match').disabled = true;
+  document.getElementById('btn-next').disabled = true;
+}
+
+async function showRecord(idx) {
+  if (idx >= sayimRecords.length) { showEmptyState(); return; }
+  currentIndex = idx;
+  const r = sayimRecords[idx];
+
+  // Fotoğraf
+  const photoEl = document.getElementById('photo-container');
+  if (r.fotoUrl) {
+    photoEl.innerHTML = `<img src="${r.fotoUrl}" alt="Sayım fotoğrafı" onerror="this.parentElement.innerHTML='<div class=\\'photo-placeholder\\'>🖼</div>'" />`;
+  } else {
+    photoEl.innerHTML = '<div class="photo-placeholder">📷</div>';
+  }
+
+  // Fotoğraf meta
+  document.getElementById('photo-meta').innerHTML = `
+    <div>${r.fotoDosya || '—'}</div>
+    <div>${r.tarih || ''} ${r.saat || ''}</div>
+    <div>${r.kullanici || ''}</div>
+  `;
+
+  // Sayım paneli
+  document.getElementById('sayim-panel').innerHTML = `
+    <div id="sayim-status-badge"></div>
+    <div class="field-row"><div class="field-label">Barkod</div><div class="field-value highlight">${esc(r.barkod)}</div></div>
+    <div class="field-row"><div class="field-label">Lokasyon No</div><div class="field-value">${esc(r.lokNo)}</div></div>
+    <div class="field-row"><div class="field-label">Lokasyon Adı</div><div class="field-value">${esc(r.lokAdi)}</div></div>
+    <div class="field-row"><div class="field-label">Malzeme Adı / Not</div><div class="field-value">${esc(r.not) || '<span class="empty">—</span>'}</div></div>
+    <div class="divider"></div>
+    <div class="field-row"><div class="field-label">Kayıt ID</div><div class="field-value" style="font-size:10px;color:var(--text2);">${esc(r.id)}</div></div>
+  `;
+
+  // IFS ara
+  selectedIfsRecord = null;
+  document.getElementById('btn-match').disabled = true;
+  await searchIfs(r.barkod, '');
+  updateProgress();
+}
+
+async function searchIfs(barcode, textQuery) {
+  document.getElementById('ifs-loading').style.display = 'block';
+  document.getElementById('ifs-content').innerHTML = '';
+
+  try {
+    let url;
+    if (textQuery) {
+      url = `${API_URL}?action=searchIfsByText&query=${encodeURIComponent(textQuery)}`;
+    } else {
+      url = `${API_URL}?action=searchIfsByBarcode&barcode=${encodeURIComponent(barcode)}`;
+    }
+    const res  = await fetch(url);
+    const data = await res.json();
+    document.getElementById('ifs-loading').style.display = 'none';
+
+    if (data.error) throw new Error(data.error);
+    ifsResults = data.results || [];
+    ifsIndex = 0;
+
+    if (ifsResults.length === 0) {
+      renderIfsNotFound();
+    } else {
+      renderIfsRecord(0);
+      // Otomatik barkod eşleşmesinde direkt seç
+      if (!textQuery && ifsResults.length === 1) {
+        selectIfsRecord(0);
+      }
+    }
+  } catch(e) {
+    document.getElementById('ifs-loading').style.display = 'none';
+    document.getElementById('ifs-content').innerHTML = `<div class="empty-state" style="padding:1rem;"><div>⚠️ ${e.message}</div></div>`;
+  }
+}
+
+function renderIfsNotFound() {
+  const r = sayimRecords[currentIndex];
+  const preSearch = r.not ? r.not.trim() : '';
+
+  document.getElementById('ifs-content').innerHTML = `
+    <div class="status-badge unmatched">⚠ Otomatik eşleşme bulunamadı</div>
+    <div class="search-wrap">
+      <div class="search-label">Manuel Arama (kelimelerle ara)</div>
+      <div class="search-row">
+        <input class="search-input" id="ifs-search-input" placeholder="örn: VİNÇ 10 TON" value="${esc(preSearch)}" onkeydown="if(event.key==='Enter') doManualSearch()" />
+        <button class="search-btn" onclick="doManualSearch()">Ara</button>
+      </div>
+    </div>
+    <div id="ifs-search-results"></div>
+  `;
+
+  document.getElementById('btn-match').disabled = true;
+  setBadge(false);
+}
+
+function renderIfsRecord(idx) {
+  if (idx < 0 || idx >= ifsResults.length) return;
+  ifsIndex = idx;
+  const r = ifsResults[idx];
+  const isAutoMatch = !document.getElementById('ifs-search-input');
+
+  const fields = [
+    { label: 'Nesne No',      val: r.nesneNo },
+    { label: 'Barkod',        val: r.barkod },
+    { label: 'Malzeme Adı',   val: r.malzemeAdi },
+    { label: 'Lokasyon No',   val: r.lokasyonNo },
+    { label: 'Lokasyon Adı',  val: r.lokasyonAdi },
+    { label: 'Seri No',       val: r.seriNo },
+    { label: 'Marka',         val: r.marka },
+    { label: 'Model',         val: r.model },
+    { label: 'Malzeme No',    val: r.malzemeNo },
+    { label: 'Tedarikçi No',  val: r.tedarikciNo },
+    { label: 'Tedarikçi Adı', val: r.tedarikciAdi },
+    { label: 'IMEI No',       val: r.imeiNo },
+    { label: 'MAC No',        val: r.macNo },
+    { label: 'Kategori',      val: r.kategori },
+  ];
+
+  const fieldsHtml = fields
+    .filter(f => f.val && String(f.val).trim() !== '' && String(f.val).trim() !== '0')
+    .map(f => `<div class="field-row"><div class="field-label">${f.label}</div><div class="field-value">${esc(String(f.val))}</div></div>`)
+    .join('');
+
+  const navHtml = ifsResults.length > 1 ? `
+    <div class="ifs-nav">
+      <button class="nav-btn" onclick="renderIfsRecord(${idx-1})" ${idx===0?'disabled':''}>◀</button>
+      <span class="nav-info">${idx+1} / ${ifsResults.length} sonuç</span>
+      <button class="nav-btn" onclick="renderIfsRecord(${idx+1})" ${idx===ifsResults.length-1?'disabled':''}>▶</button>
+    </div>
+  ` : '';
+
+  const searchHtml = `
+    <div class="search-wrap" style="margin-top:10px;">
+      <div class="search-label">Farklı arama yap</div>
+      <div class="search-row">
+        <input class="search-input" id="ifs-search-input" placeholder="örn: VİNÇ 10 TON" onkeydown="if(event.key==='Enter') doManualSearch()" />
+        <button class="search-btn" onclick="doManualSearch()">Ara</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('ifs-content').innerHTML = `
+    <div id="ifs-status-badge"></div>
+    ${navHtml}
+    ${fieldsHtml}
+    <div class="divider"></div>
+    <button onclick="selectIfsRecord(${idx})" id="btn-select-ifs" style="width:100%;padding:10px;background:var(--green-light);border:1.5px solid var(--green);border-radius:8px;color:var(--green);font-size:13px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;">
+      ✓ Bu kaydı seç
+    </button>
+    ${searchHtml}
+  `;
+
+  // Otomatik tek sonuçta zaten seçiliyor
+  updateIfsStatus();
+}
+
+function selectIfsRecord(idx) {
+  selectedIfsRecord = ifsResults[idx];
+  document.getElementById('btn-match').disabled = false;
+  document.getElementById('btn-select-ifs').textContent = '✅ Seçildi';
+  document.getElementById('btn-select-ifs').style.background = 'var(--green)';
+  document.getElementById('btn-select-ifs').style.color = '#fff';
+  setBadge(true);
+  showToast('IFS kaydı seçildi', 'green');
+}
+
+function setBadge(matched) {
+  const el = document.getElementById('sayim-status-badge');
+  if (!el) return;
+  el.innerHTML = matched
+    ? '<div class="status-badge matched">✅ IFS eşleşmesi bulundu</div>'
+    : '<div class="status-badge unmatched">⚠ IFS eşleşmesi yok</div>';
+}
+
+function updateIfsStatus() {
+  const el = document.getElementById('ifs-status-badge');
+  if (!el) return;
+  el.innerHTML = ifsResults.length > 0
+    ? `<div class="status-badge matched">✅ ${ifsResults.length} sonuç bulundu</div>`
+    : '<div class="status-badge unmatched">⚠ Sonuç bulunamadı</div>';
+}
+
+async function doManualSearch() {
+  const input = document.getElementById('ifs-search-input');
+  if (!input) return;
+  const q = input.value.trim();
+  if (!q) return;
+  await searchIfs('', q);
+
+  // Sonuçları search results alanında göster
+  if (document.getElementById('ifs-search-results')) {
+    if (ifsResults.length === 0) {
+      document.getElementById('ifs-search-results').innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0;">Sonuç bulunamadı.</div>';
+    } else {
+      document.getElementById('ifs-search-results').innerHTML = '';
+    }
+  }
+}
+
+// ── EŞLEŞTİR ────────────────────────────────────────────
+async function eslestir() {
+  if (!selectedIfsRecord) { showToast('Önce bir IFS kaydı seçin', 'warn'); return; }
+  const sayimRecord = sayimRecords[currentIndex];
+
+  document.getElementById('btn-match').disabled = true;
+  document.getElementById('btn-match').textContent = '⏳ Kaydediliyor...';
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      body: JSON.stringify({
+        action        : 'eslestir',
+        sayimRowIndex : sayimRecord.rowIndex,
+        ifsRowIndex   : selectedIfsRecord.rowIndex,
+        sayimRecord   : sayimRecord,
+        ifsRecord     : selectedIfsRecord,
+        kullanici     : currentUser?.email || ''
+      })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Hata');
+
+    showToast('✓ Eşleştirme kaydedildi', 'green');
+
+    // Listeden çıkar ve sonraki kayda geç
+    sayimRecords.splice(currentIndex, 1);
+    if (currentIndex >= sayimRecords.length) currentIndex = Math.max(0, sayimRecords.length - 1);
+
+    setTimeout(() => {
+      if (sayimRecords.length === 0) {
+        showEmptyState();
+      } else {
+        showRecord(currentIndex);
+      }
+      updateProgress();
+    }, 600);
+
+  } catch(e) {
+    showToast('⚠ ' + e.message, 'err');
+    document.getElementById('btn-match').disabled = false;
+    document.getElementById('btn-match').textContent = '✓ Eşleştir';
+  }
+}
+
+function nextRecord() {
+  if (sayimRecords.length === 0) return;
+  const next = (currentIndex + 1) % sayimRecords.length;
+  showRecord(next);
+}
+
+function updateProgress() {
+  // Toplam = eşleştirilen + kalan (sayimRecords.length kalan)
+  // Basit gösterim: kalan kayıt sayısı
+  const remaining = sayimRecords.length;
+  document.getElementById('progress-nums').textContent = `${remaining} kayıt bekliyor`;
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('progress-pct').textContent = '';
+}
+
+// ── YARDIMCI ────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || '');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── BAŞLANGIÇ ────────────────────────────────────────────
+const saved = localStorage.getItem('eslesme_user');
+if (saved) {
+  try {
+    const u = JSON.parse(saved);
+    if (u.email && u.name && u.expiry && Date.now() < u.expiry) {
+      currentUser = u;
+      onLoginSuccess();
+    } else {
+      document.getElementById('login-screen').classList.remove('hide');
+    }
+  } catch(e) {
+    document.getElementById('login-screen').classList.remove('hide');
+  }
+} else {
+  document.getElementById('login-screen').classList.remove('hide');
+}
+</script>
+</body>
+</html>
