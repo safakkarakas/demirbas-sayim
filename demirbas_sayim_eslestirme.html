@@ -234,7 +234,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.07.08';
+var APP_VERSION = 'v2026.05.07.09';
 var API_URL = 'https://script.google.com/macros/s/AKfycby-qAESYDXYAkOMN8sXYTl7F3HmdNwikz9b4VYJdK7Vk4NV8J2R3gIwPh1LLexln4f_/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
@@ -353,11 +353,11 @@ async function loadSayimRecords() {
     try {
       var r2 = await fetch(API_URL + '?action=getEslesmeSayisi');
       var d2 = await r2.json();
-      if (d2.count) eslenenSayisi = d2.count;
+      if (d2 && d2.count !== undefined) eslenenSayisi = parseInt(d2.count) || 0;
       // Atlanmış sayısını da al
       var r3 = await fetch(API_URL + '?action=getAtlandiSayisi');
       var d3 = await r3.json();
-      if (d3.count !== undefined) atlandiSayisi = d3.count;
+      if (d3 && d3.count !== undefined) atlandiSayisi = parseInt(d3.count) || 0;
     } catch(ex) { eslenenSayisi = 0; }
     if (!sayimRecords.length) { showEmptyState(); return; }
     showRecord(0);
