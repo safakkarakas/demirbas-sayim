@@ -147,6 +147,15 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 .toast.warn { background:var(--orange); }
 .toast.err { background:var(--accent); }
 .empty-state { padding:2rem; text-align:center; color:var(--text3); font-family:var(--mono); font-size:12px; }
+.ifs-list-wrap { display:grid; grid-template-columns:180px 1fr; gap:10px; margin-bottom:8px; }
+.ifs-list { border:1px solid var(--border2); border-radius:var(--radius-sm); overflow-y:auto; max-height:260px; }
+.ifs-list-item { padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--border); transition:background 0.12s; }
+.ifs-list-item:last-child { border-bottom:none; }
+.ifs-list-item:hover { background:var(--surface2); }
+.ifs-list-item.active { background:rgba(26,122,58,0.08); border-left:3px solid var(--green); }
+.ifs-list-main { font-size:12px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ifs-list-sub { font-size:10px; font-family:var(--mono); color:var(--text3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ifs-detail { overflow-y:auto; max-height:260px; padding-right:4px; }
 .empty-icon { font-size:32px; margin-bottom:8px; }
 </style>
 </head>
@@ -234,7 +243,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.08.03';
+var APP_VERSION = 'v2026.05.08.04';
 var API_URL = 'https://script.google.com/macros/s/AKfycbygmkAv_oztdG_-XI3Iv5Z86PN_6oCjMaSWfT2ziHKeyRDGLMh8LuKAgEZX-Nb2QNko/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
@@ -403,7 +412,6 @@ async function showRecord(idx) {
       '<div><div class="di-label">Lokasyon No</div><div class="di-value">' + esc(r.lokNo) + '</div></div>' +
       '<div class="di-full"><div class="di-label">Lokasyon Adı</div><div class="di-value">' + esc(r.lokAdi) + '</div></div>' +
       '<div class="di-full"><div class="di-label">Malzeme Adı / Not</div><div class="di-value ' + (r.not ? '' : 'muted') + '">' + esc(r.not || '—') + '</div></div>' +
-      '<div class="di-full"><div class="di-label">Kayıt ID</div><div class="di-value mono">' + esc(r.id) + '</div></div>' +
     '</div>';
 
   document.getElementById('sayim-status').innerHTML = '';
@@ -484,74 +492,90 @@ function renderIfsNotFound() {
 function renderIfsRecord(idx) {
   if (idx < 0 || idx >= ifsResults.length) return;
   ifsIndex = idx;
-  var r = ifsResults[idx];
-  var allFields = [
-    ['Nesne No', r.nesneNo, false], ['Barkod', r.barkod, false],
-    ['Malzeme Adı', r.malzemeAdi, true], ['Lokasyon No', r.lokasyonNo, false],
-    ['Lokasyon Adı', r.lokasyonAdi, true], ['Seri No', r.seriNo, false],
-    ['Marka', r.marka, false], ['Model', r.model, false],
-    ['Malzeme No', r.malzemeNo, false], ['Tedarikçi No', r.tedarikciNo, false],
-    ['Tedarikçi Adı', r.tedarikciAdi, true], ['IMEI No', r.imeiNo, false],
-    ['MAC No', r.macNo, false], ['Kategori', r.kategori, false]
-  ];
-  var fields = allFields.filter(function(f) {
-    return f[1] && String(f[1]).trim() !== '' && String(f[1]).trim() !== '0';
-  });
+  renderIfsList(idx);
+}
 
-  var navHtml = '';
-  if (ifsResults.length > 1) {
-    navHtml = '<div class="nav-row">' +
-      '<button class="nav-btn" id="nav-prev"' + (idx === 0 ? ' disabled' : '') + '>&#9664;</button>' +
-      '<span class="nav-info">' + (idx + 1) + ' / ' + ifsResults.length + '</span>' +
-      '<button class="nav-btn" id="nav-next"' + (idx === ifsResults.length - 1 ? ' disabled' : '') + '>&#9654;</button>' +
-      '</div>';
-  }
-
-  var gridHtml = '<div class="data-grid">';
-  for (var i = 0; i < fields.length; i++) {
-    gridHtml += '<div' + (fields[i][2] ? ' class="di-full"' : '') + '>' +
-      '<div class="di-label">' + fields[i][0] + '</div>' +
-      '<div class="di-value">' + esc(String(fields[i][1])) + '</div></div>';
-  }
-  gridHtml += '</div>';
-
+function renderIfsList(activeIdx) {
   document.getElementById('ifs-status').innerHTML =
     '<div class="status-chip matched">&#10003; ' + ifsResults.length + ' sonuç</div>';
 
-  document.getElementById('ifs-content').innerHTML =
-    navHtml + gridHtml +
-    '<div class="divider"></div>' +
-    '<button class="btn-select" id="btn-select-ifs">&#10003; Bu kaydı seç</button>' +
-    '<div class="search-wrap" style="margin-top:12px;">' +
-      '<div class="search-label">Farklı arama</div>' +
-      '<div class="search-row">' +
-        '<input class="search-input" id="ifs-search-input" placeholder="örn: VİNÇ 10 TON" />' +
-        '<button class="btn-search" onclick="doManualSearch()">Ara</button>' +
-      '</div>' +
-    '</div>';
+  var listHtml = '';
 
-  document.getElementById('btn-select-ifs').addEventListener('click', function() { selectIfsRecord(ifsIndex); });
-  var np = document.getElementById('nav-prev');
-  var nn = document.getElementById('nav-next');
-  if (np) np.addEventListener('click', function() { renderIfsRecord(ifsIndex - 1); });
-  if (nn) nn.addEventListener('click', function() { renderIfsRecord(ifsIndex + 1); });
+  // Birden fazla sonuç varsa sol liste + sağ detay
+  if (ifsResults.length > 1) {
+    listHtml += '<div class="ifs-list-wrap">';
+    listHtml += '<div class="ifs-list" id="ifs-list">';
+    for (var i = 0; i < ifsResults.length; i++) {
+      var ri = ifsResults[i];
+      listHtml += '<div class="ifs-list-item' + (i === activeIdx ? ' active' : '') + '" data-idx="' + i + '">' +
+        '<div class="ifs-list-main">' + esc(ri.malzemeAdi || ri.nesneNo || '—') + '</div>' +
+        '<div class="ifs-list-sub">' + esc(ri.nesneNo || '') + (ri.lokasyonNo ? ' • ' + esc(ri.lokasyonNo) : '') + '</div>' +
+        '</div>';
+    }
+    listHtml += '</div>';
+    listHtml += '<div class="ifs-detail" id="ifs-detail">' + buildDetailHtml(ifsResults[activeIdx]) + '</div>';
+    listHtml += '</div>';
+  } else {
+    // Tek sonuç — direkt detay
+    listHtml += '<div id="ifs-detail">' + buildDetailHtml(ifsResults[activeIdx]) + '</div>';
+  }
+
+  // Arama
+  listHtml += '<div class="search-wrap" style="margin-top:10px;">' +
+    '<div class="search-label">Farklı arama</div>' +
+    '<div class="search-row">' +
+      '<input class="search-input" id="ifs-search-input" placeholder="örn: VİNÇ 10 TON" />' +
+      '<button class="btn-search" onclick="doManualSearch()">Ara</button>' +
+    '</div></div>';
+
+  document.getElementById('ifs-content').innerHTML = listHtml;
+
+  // Liste tıklama
+  var listEl = document.getElementById('ifs-list');
+  if (listEl) {
+    listEl.addEventListener('click', function(e) {
+      var item = e.target.closest('.ifs-list-item');
+      if (!item) return;
+      var newIdx = parseInt(item.getAttribute('data-idx'));
+      ifsIndex = newIdx;
+      // Aktif item güncelle
+      listEl.querySelectorAll('.ifs-list-item').forEach(function(el) { el.classList.remove('active'); });
+      item.classList.add('active');
+      // Detay güncelle
+      document.getElementById('ifs-detail').innerHTML = buildDetailHtml(ifsResults[newIdx]);
+      attachSelectBtn(newIdx);
+    });
+  }
+  attachSelectBtn(activeIdx);
   var si = document.getElementById('ifs-search-input');
   if (si) si.addEventListener('keydown', function(e) { if (e.key === 'Enter') doManualSearch(); });
 }
 
-function selectIfsRecord(idx) {
-  selectedIfsRecord = ifsResults[idx];
-  document.getElementById('btn-match').disabled = false;
-  var btn = document.getElementById('btn-select-ifs');
-  if (btn) { btn.textContent = '&#10003; Seçildi'; btn.classList.add('selected'); }
-  document.getElementById('sayim-status').innerHTML =
-    '<div class="status-chip matched">&#10003; eşleşme seçildi</div>';
-  showToast('IFS kaydı seçildi', 'green');
+function buildDetailHtml(r) {
+  var allFields = [
+    ['Nesne No', r.nesneNo], ['Barkod', r.barkod],
+    ['Malzeme Adı', r.malzemeAdi], ['Lokasyon No', r.lokasyonNo],
+    ['Lokasyon Adı', r.lokasyonAdi], ['Seri No', r.seriNo],
+    ['Marka', r.marka], ['Model', r.model],
+    ['Malzeme No', r.malzemeNo], ['Tedarikçi No', r.tedarikciNo],
+    ['Tedarikçi Adı', r.tedarikciAdi], ['IMEI No', r.imeiNo],
+    ['MAC No', r.macNo], ['Kategori', r.kategori]
+  ].filter(function(f) { return f[1] && String(f[1]).trim() !== '' && String(f[1]).trim() !== '0'; });
+
+  var h = '';
+  for (var i = 0; i < allFields.length; i++) {
+    h += '<div style="margin-bottom:7px;">' +
+      '<div class="di-label">' + allFields[i][0] + '</div>' +
+      '<div class="di-value">' + esc(String(allFields[i][1])) + '</div></div>';
+  }
+  h += '<div class="divider"></div>' +
+    '<button class="btn-select" id="btn-select-ifs">&#10003; Bu kaydı seç</button>';
+  return h;
 }
 
-function doManualSearch() {
-  var inp = document.getElementById('ifs-search-input');
-  if (inp && inp.value.trim()) searchIfs('', inp.value.trim());
+function attachSelectBtn(idx) {
+  var btn = document.getElementById('btn-select-ifs');
+  if (btn) btn.addEventListener('click', function() { selectIfsRecord(idx); });
 }
 
 // ── EŞLEŞTİR ────────────────────────────────────────────
