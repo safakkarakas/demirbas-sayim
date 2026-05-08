@@ -264,7 +264,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.08.15';
+var APP_VERSION = 'v2026.05.08.16';
 var API_URL = 'https://script.google.com/macros/s/AKfycbwe6QnCQxs7N7xZM8ZsSLidElkb8k732Y30wMAbV4sXM836-odhpU3VaelxunlJgi4l/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
@@ -502,7 +502,7 @@ function renderIfsNotFound() {
       '<div class="search-label">Manuel Arama</div>' +
       '<div class="search-row">' +
         '<input class="search-input" id="ifs-search-input" placeholder="örn: VİNÇ 10 TON"' +
-        ' value="" />' +
+        ' value="' + esc((sayimRecords[currentIndex] && sayimRecords[currentIndex].not) ? sayimRecords[currentIndex].not : '') + '" />' +
         '<button class="btn-search" onclick="doManualSearch()">Ara</button>' +
       '</div>' +
     '</div>';
