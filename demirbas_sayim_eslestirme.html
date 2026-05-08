@@ -243,7 +243,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.08.04';
+var APP_VERSION = 'v2026.05.08.05';
 var API_URL = 'https://script.google.com/macros/s/AKfycbygmkAv_oztdG_-XI3Iv5Z86PN_6oCjMaSWfT2ziHKeyRDGLMh8LuKAgEZX-Nb2QNko/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
@@ -576,6 +576,11 @@ function buildDetailHtml(r) {
 function attachSelectBtn(idx) {
   var btn = document.getElementById('btn-select-ifs');
   if (btn) btn.addEventListener('click', function() { selectIfsRecord(idx); });
+}
+
+function doManualSearch() {
+  var inp = document.getElementById('ifs-search-input');
+  if (inp && inp.value.trim()) searchIfs('', inp.value.trim());
 }
 
 // ── EŞLEŞTİR ────────────────────────────────────────────
