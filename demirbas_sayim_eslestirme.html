@@ -147,22 +147,15 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 .toast.warn { background:var(--orange); }
 .toast.err { background:var(--accent); }
 .empty-state { padding:2rem; text-align:center; color:var(--text3); font-family:var(--mono); font-size:12px; }
-.ifs-list-wrap { display:grid; grid-template-columns:180px 1fr; gap:10px; margin-bottom:8px; }
-.ifs-list { border:1px solid var(--border2); border-radius:var(--radius-sm); overflow-y:auto; max-height:260px; }
+.ifs-list-wrap { display:grid; grid-template-columns:260px 1fr; gap:10px; margin-bottom:8px; }
+.ifs-list { border:1px solid var(--border2); border-radius:var(--radius-sm); overflow-y:auto; max-height:320px; }
 .ifs-list-item { padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--border); transition:background 0.12s; }
 .ifs-list-item:last-child { border-bottom:none; }
 .ifs-list-item:hover { background:var(--surface2); }
 .ifs-list-item.active { background:rgba(26,122,58,0.08); border-left:3px solid var(--green); }
-.ifs-list-main { font-size:12px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ifs-list-main { font-size:12px; font-weight:600; color:var(--text); white-space:normal; word-break:break-word; }
 .ifs-list-sub { font-size:10px; font-family:var(--mono); color:var(--text3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ifs-detail { overflow-y:auto; max-height:260px; padding-right:4px; }
-.ifs-list-num { font-size:10px; font-family:var(--mono); color:var(--text3); margin-right:6px; flex-shrink:0; min-width:18px; }
-.ifs-list-item { display:flex; align-items:flex-start; padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--border); transition:background 0.12s; }
-.ifs-list-content { flex:1; min-width:0; }
-.barkod-ara-wrap { display:flex; gap:8px; padding:8px 1.25rem; background:var(--surface); border-bottom:1px solid var(--border); align-items:center; flex-shrink:0; }
-.barkod-ara-label { font-size:10px; font-family:var(--mono); color:var(--text3); white-space:nowrap; text-transform:uppercase; letter-spacing:0.08em; }
-.btn-copy-all { padding:5px 12px; background:none; border:1px solid var(--border2); border-radius:var(--radius-sm); font-size:11px; font-family:var(--mono); color:var(--blue); cursor:pointer; white-space:nowrap; }
-.btn-copy-all:hover { background:rgba(37,99,235,0.06); }
 .empty-icon { font-size:32px; margin-bottom:8px; }
 </style>
 </head>
@@ -204,12 +197,6 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
   </div>
 </header>
 
-<div class="barkod-ara-wrap" id="barkod-ara-wrap" style="display:none;">
-  <span class="barkod-ara-label">Barkod ile Ara:</span>
-  <input class="search-input" id="barkod-ara-input" placeholder="Barkod numarası girin..." style="max-width:240px;" />
-  <button class="btn-search" onclick="araByBarkod()">Ara</button>
-  <button class="btn-next" style="flex:none;padding:0 12px;" onclick="temizleBarkodAra()">&#10005; Temizle</button>
-</div>
 <div class="progress-bar" id="progress-bar">
   <span class="p-label" id="p-bekleyen" style="color:var(--text2);">— bekliyor</span>
   <span style="color:var(--border2);">|</span>
@@ -256,8 +243,8 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.08.06';
-var API_URL = 'https://script.google.com/macros/s/AKfycbygmkAv_oztdG_-XI3Iv5Z86PN_6oCjMaSWfT2ziHKeyRDGLMh8LuKAgEZX-Nb2QNko/exec';
+var APP_VERSION = 'v2026.05.08.07';
+var API_URL = 'https://script.google.com/macros/s/AKfycbwObtL3KbdKqE3dlKNmJmUZW8E4eJoojFhbjyrwaVfVAasmsEWOZELmYRS6ac_kYw4m/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
 var currentUser = null;
@@ -352,7 +339,6 @@ function onLoginSuccess() {
   document.getElementById('app').classList.add('show');
   document.getElementById('action-footer').classList.add('show');
   document.getElementById('progress-bar').classList.add('show');
-  document.getElementById('barkod-ara-wrap').style.display = 'flex';
   loadSayimRecords();
 }
 
@@ -515,40 +501,26 @@ function renderIfsList(activeIdx) {
 
   var listHtml = '';
 
-  // Nesne No kopyala butonu (tüm sonuçlar için)
-  if (ifsResults.length > 0) {
-    listHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
-      '<span style="font-size:10px;font-family:var(--mono);color:var(--text3);">' + ifsResults.length + ' sonuç</span>' +
-      '<button class="btn-copy-all" onclick="copyAllNesneNo()">&#128203; Nesne No Kopyala</button>' +
-      '</div>';
-  }
-
+  // Birden fazla sonuç varsa sol liste + sağ detay
   if (ifsResults.length > 1) {
     listHtml += '<div class="ifs-list-wrap">';
     listHtml += '<div class="ifs-list" id="ifs-list">';
     for (var i = 0; i < ifsResults.length; i++) {
       var ri = ifsResults[i];
       listHtml += '<div class="ifs-list-item' + (i === activeIdx ? ' active' : '') + '" data-idx="' + i + '">' +
-        '<span class="ifs-list-num">' + (i + 1) + '.</span>' +
-        '<div class="ifs-list-content">' +
-          '<div class="ifs-list-main">' + esc(ri.malzemeAdi || '—') + '</div>' +
-          '<div class="ifs-list-sub">' +
-            (ri.nesneNo ? 'No:' + esc(ri.nesneNo) : '') +
-            (ri.lokasyonAdi ? ' • ' + esc(ri.lokasyonAdi) : '') +
-            (ri.seriNo ? ' • S/N:' + esc(ri.seriNo) : '') +
-            (ri.marka ? ' • ' + esc(ri.marka) : '') +
-            (ri.model ? ' ' + esc(ri.model) : '') +
-          '</div>' +
-        '</div>' +
+        '<div class="ifs-list-main">' + esc(ri.malzemeAdi || ri.nesneNo || '—') + '</div>' +
+        '<div class="ifs-list-sub">' + esc(ri.nesneNo || '') + (ri.lokasyonNo ? ' • ' + esc(ri.lokasyonNo) : '') + '</div>' +
         '</div>';
     }
     listHtml += '</div>';
     listHtml += '<div class="ifs-detail" id="ifs-detail">' + buildDetailHtml(ifsResults[activeIdx]) + '</div>';
     listHtml += '</div>';
   } else {
+    // Tek sonuç — direkt detay
     listHtml += '<div id="ifs-detail">' + buildDetailHtml(ifsResults[activeIdx]) + '</div>';
   }
 
+  // Arama
   listHtml += '<div class="search-wrap" style="margin-top:10px;">' +
     '<div class="search-label">Farklı arama</div>' +
     '<div class="search-row">' +
@@ -558,6 +530,7 @@ function renderIfsList(activeIdx) {
 
   document.getElementById('ifs-content').innerHTML = listHtml;
 
+  // Liste tıklama
   var listEl = document.getElementById('ifs-list');
   if (listEl) {
     listEl.addEventListener('click', function(e) {
@@ -565,8 +538,10 @@ function renderIfsList(activeIdx) {
       if (!item) return;
       var newIdx = parseInt(item.getAttribute('data-idx'));
       ifsIndex = newIdx;
+      // Aktif item güncelle
       listEl.querySelectorAll('.ifs-list-item').forEach(function(el) { el.classList.remove('active'); });
       item.classList.add('active');
+      // Detay güncelle
       document.getElementById('ifs-detail').innerHTML = buildDetailHtml(ifsResults[newIdx]);
       attachSelectBtn(newIdx);
     });
@@ -600,72 +575,16 @@ function buildDetailHtml(r) {
 
 function attachSelectBtn(idx) {
   var btn = document.getElementById('btn-select-ifs');
-  if (btn) btn.addEventListener('click', function() { selectIfsRecord(idx); });
+  if (btn) {
+    var newBtn = btn.cloneNode(true); // listener'ları temizle
+    btn.parentNode.replaceChild(newBtn, btn);
+    newBtn.addEventListener('click', function() { selectIfsRecord(idx); });
+  }
 }
 
 function doManualSearch() {
   var inp = document.getElementById('ifs-search-input');
   if (inp && inp.value.trim()) searchIfs('', inp.value.trim());
-}
-
-function copyAllNesneNo() {
-  var nos = ifsResults.map(function(r) { return r.nesneNo || ''; }).filter(function(n) { return n; });
-  if (!nos.length) { showToast('Nesne No bulunamadı', 'warn'); return; }
-  var text = nos.join('; ');
-  navigator.clipboard.writeText(text).then(function() {
-    showToast(nos.length + ' Nesne No kopyalandı', 'green');
-  }).catch(function() {
-    // Fallback
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast(nos.length + ' Nesne No kopyalandı', 'green');
-  });
-}
-
-async function araByBarkod() {
-  var inp = document.getElementById('barkod-ara-input');
-  if (!inp || !inp.value.trim()) { showToast('Barkod girin', 'warn'); return; }
-  var barkod = inp.value.trim();
-  try {
-    var resp = await fetch(API_URL + '?action=getSayimByBarkod&barcode=' + encodeURIComponent(barkod));
-    var data = await resp.json();
-    if (data.error) throw new Error(data.error);
-    if (!data.record) { showToast('Kayıt bulunamadı', 'warn'); return; }
-    var r = data.record;
-    // Sayım panelini güncelle
-    document.getElementById('sayim-panel').innerHTML =
-      '<div class="data-grid" style="grid-template-columns:1fr;">' +
-        '<div><div class="di-label">Barkod</div><div class="di-value accent">' + esc(r.barkod) + '</div></div>' +
-        '<div><div class="di-label">Lokasyon No</div><div class="di-value">' + esc(r.lokNo) + '</div></div>' +
-        '<div class="di-full"><div class="di-label">Lokasyon Adı</div><div class="di-value">' + esc(r.lokAdi) + '</div></div>' +
-        '<div class="di-full"><div class="di-label">Malzeme Adı / Not</div><div class="di-value ' + (r.not ? '' : 'muted') + '">' + esc(r.not || '—') + '</div></div>' +
-      '</div>';
-    // Fotoğrafı güncelle
-    if (r.fotoUrl) {
-      var thumb = getDriveThumbUrl(r.fotoUrl);
-      document.getElementById('photo-wrap').innerHTML =
-        '<a href="' + r.fotoUrl + '" target="_blank"><img src="' + thumb + '" alt="foto" /></a>';
-    }
-    document.getElementById('photo-filename').textContent = r.fotoDosya || '—';
-    document.getElementById('photo-info').textContent = (r.tarih || '') + ' ' + (r.saat || '') + '  •  ' + (r.kullanici || '');
-    // IFS ara
-    selectedIfsRecord = null;
-    document.getElementById('btn-match').disabled = true;
-    document.getElementById('sayim-status').innerHTML = '';
-    await searchIfs(r.barkod, '');
-    showToast('Kayıt bulundu', 'green');
-  } catch(e) {
-    showToast('Hata: ' + e.message, 'err');
-  }
-}
-
-function temizleBarkodAra() {
-  var inp = document.getElementById('barkod-ara-input');
-  if (inp) inp.value = '';
 }
 
 // ── EŞLEŞTİR ────────────────────────────────────────────
