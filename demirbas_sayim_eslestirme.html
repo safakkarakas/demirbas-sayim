@@ -264,8 +264,8 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.08.14';
-var API_URL = 'https://script.google.com/macros/s/AKfycbwObtL3KbdKqE3dlKNmJmUZW8E4eJoojFhbjyrwaVfVAasmsEWOZELmYRS6ac_kYw4m/exec';
+var APP_VERSION = 'v2026.05.08.15';
+var API_URL = 'https://script.google.com/macros/s/AKfycbwe6QnCQxs7N7xZM8ZsSLidElkb8k732Y30wMAbV4sXM836-odhpU3VaelxunlJgi4l/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
 var currentUser = null;
@@ -502,7 +502,7 @@ function renderIfsNotFound() {
       '<div class="search-label">Manuel Arama</div>' +
       '<div class="search-row">' +
         '<input class="search-input" id="ifs-search-input" placeholder="örn: VİNÇ 10 TON"' +
-        ' value="' + esc(r.not || '') + '" />' +
+        ' value="" />' +
         '<button class="btn-search" onclick="doManualSearch()">Ara</button>' +
       '</div>' +
     '</div>';
@@ -656,6 +656,7 @@ async function araByBarkod() {
     var data = await resp.json();
     if (data.error) throw new Error(data.error);
     if (!data.record) { showToast('Kayıt bulunamadı', 'warn'); return; }
+    if (data.record.eslesti) { showToast('Bu kayıt zaten eşleştirilmiş', 'warn'); return; }
     var r = data.record;
     document.getElementById('sayim-panel').innerHTML =
       '<div class="data-grid" style="grid-template-columns:1fr;">' +
@@ -674,7 +675,7 @@ async function araByBarkod() {
     document.getElementById('btn-match').disabled = true;
     document.getElementById('sayim-status').innerHTML = '';
     await searchIfs(String(r.barkod), '');
-    showToast('Kayıt bulundu', 'green');
+    showToast('Sayım kaydı yüklendi', 'green');
   } catch(e) { showToast('Hata: ' + e.message, 'err'); }
 }
 
