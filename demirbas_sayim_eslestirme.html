@@ -264,7 +264,8 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.08.16';
+var APP_VERSION = 'v2026.05.08.17';
+var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
 var API_URL = 'https://script.google.com/macros/s/AKfycbwe6QnCQxs7N7xZM8ZsSLidElkb8k732Y30wMAbV4sXM836-odhpU3VaelxunlJgi4l/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
@@ -355,6 +356,13 @@ async function handleTokenResponse(r) {
 }
 
 function onLoginSuccess() {
+  if (ALLOWED_EMAILS.indexOf(currentUser.email) === -1) {
+    localStorage.removeItem('eslesme_user');
+    var el = document.getElementById('login-err');
+    el.textContent = 'Bu hesabın erişim yetkisi yok: ' + currentUser.email;
+    el.classList.add('show');
+    return;
+  }
   document.getElementById('login-screen').classList.add('hide');
   document.getElementById('user-info').textContent = currentUser.name;
   document.getElementById('app').classList.add('show');
