@@ -264,7 +264,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.08.13';
+var APP_VERSION = 'v2026.05.08.14';
 var API_URL = 'https://script.google.com/macros/s/AKfycbwObtL3KbdKqE3dlKNmJmUZW8E4eJoojFhbjyrwaVfVAasmsEWOZELmYRS6ac_kYw4m/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
@@ -483,7 +483,7 @@ async function searchIfs(barcode, textQuery) {
       renderIfsNotFound();
     } else {
       renderIfsRecord(0);
-      if (!textQuery && ifsResults.length === 1) selectIfsRecord(0);
+      if (!textQuery && ifsResults.length === 1) attachSelectBtn(0); // tek sonuçta otomatik seç
     }
   } catch(e) {
     document.getElementById('ifs-loading').style.display = 'none';
@@ -611,15 +611,19 @@ function attachSelectBtn(idx) {
     var newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
     newBtn.addEventListener('click', function() {
-      selectedIfsRecord = ifsResults[idx];
-      document.getElementById('btn-match').disabled = false;
-      var b = document.getElementById('btn-select-ifs');
-      if (b) { b.textContent = 'Secildi'; b.classList.add('selected'); }
-      document.getElementById('sayim-status').innerHTML =
-        '<div class="status-chip matched">&#10003; eslesme secildi</div>';
-      showToast('IFS kaydi secildi', 'green');
+      selectIfsRecord(idx);
     });
   }
+}
+
+function selectIfsRecord(idx) {
+  selectedIfsRecord = ifsResults[idx];
+  document.getElementById('btn-match').disabled = false;
+  var b = document.getElementById('btn-select-ifs');
+  if (b) { b.textContent = '\u2705 Se\u00e7ildi'; b.classList.add('selected'); }
+  document.getElementById('sayim-status').innerHTML =
+    '<div class="status-chip matched">&#10003; e\u015fle\u015fme se\u00e7ildi</div>';
+  showToast('IFS kayd\u0131 se\u00e7ildi', 'green');
 }
 
 function doManualSearch() {
