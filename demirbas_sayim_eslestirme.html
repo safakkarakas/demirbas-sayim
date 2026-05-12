@@ -264,7 +264,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.12.01';
+var APP_VERSION = 'v2026.05.12.02';
 var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
 var API_URL = 'https://script.google.com/macros/s/AKfycbwnW9zd1D31qZlG0yq-cekbRpAsBB_1OqcxTjvOZfH4X0y5plemkyHBf8QLOaWg7YVv/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
@@ -546,7 +546,7 @@ function searchIfsLocal(barcode, textQuery) {
       // Barkod araması
       if (String(r.barkod).trim() === String(barcode).trim()) results.push(r);
     }
-    if (results.length >= 50) break;
+    // limit yok
   }
   return results;
 }
@@ -746,6 +746,7 @@ async function eslestir() {
   btn.disabled = true;
   btn.textContent = '⏳ Kaydediliyor...';
   var sr = sayimRecords[currentIndex];
+  var success = false;
   try {
     var resp = await fetch(API_URL, {
       method: 'POST', redirect: 'follow',
@@ -760,18 +761,36 @@ async function eslestir() {
     });
     var data = await resp.json();
     if (!data.success) throw new Error(data.error || 'Hata');
+    success = true;
     eslenenSayisi++;
+    // Cache'de eşleştirilen IFS kaydını işaretle
+    if (selectedIfsRecord && selectedIfsRecord.rowIndex) {
+      for (var i = 0; i < ifsCache.length; i++) {
+        if (ifsCache[i].rowIndex === selectedIfsRecord.rowIndex) {
+          ifsCache[i].eslesti = 'EVET';
+          break;
+        }
+      }
+    }
     showToast('Eşleştirme kaydedildi', 'green');
-    // Eşleştirilen kaydı hem allRecords hem sayimRecords'dan çıkar
     allRecords = allRecords.filter(function(r) { return r.id !== sr.id; });
     applyFilter();
-    if (!sayimRecords.length) { showEmptyState(); return; }
-    if (currentIndex >= sayimRecords.length) currentIndex = 0;
-    setTimeout(function() { showRecord(currentIndex); updateProgress(); }, 500);
+    if (!sayimRecords.length) {
+      showEmptyState();
+    } else {
+      if (currentIndex >= sayimRecords.length) currentIndex = 0;
+      setTimeout(function() { showRecord(currentIndex); updateProgress(); }, 500);
+    }
   } catch(e) {
     showToast('Hata: ' + e.message, 'err');
-    btn.disabled = false;
-    btn.textContent = '&#10003; Eşleştir';
+  } finally {
+    if (!success || !sayimRecords.length) {
+      btn.disabled = true; // boşsa disabled kalsın
+      btn.textContent = '&#10003; Eşleştir';
+    } else {
+      btn.disabled = true; // showRecord yeni kayıt yükleyince zaten sıfırlanacak
+      btn.textContent = '&#10003; Eşleştir';
+    }
   }
 }
 
