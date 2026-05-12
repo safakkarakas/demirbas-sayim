@@ -264,9 +264,9 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.08.17';
+var APP_VERSION = 'v2026.05.12.01';
 var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
-var API_URL = 'https://script.google.com/macros/s/AKfycbwe6QnCQxs7N7xZM8ZsSLidElkb8k732Y30wMAbV4sXM836-odhpU3VaelxunlJgi4l/exec';
+var API_URL = 'https://script.google.com/macros/s/AKfycbwnW9zd1D31qZlG0yq-cekbRpAsBB_1OqcxTjvOZfH4X0y5plemkyHBf8QLOaWg7YVv/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
 var currentUser = null;
@@ -276,6 +276,8 @@ var currentIndex = 0;
 var ifsResults = [];
 var ifsIndex = 0;
 var selectedIfsRecord = null;
+var ifsCache = [];        // IFS verisi bellekte saklanır
+var ifsCacheLoaded = false;
 var atlandiSayisi = 0;    // sunucudan gelen atlanmış kayıt sayısı
 var eslenenSayisi = 0;    // bu oturumda eşleştirilen sayısı
 var totalRecords = 0;     // sunucudan gelen toplam kayıt sayısı
@@ -369,6 +371,7 @@ function onLoginSuccess() {
   document.getElementById('action-footer').classList.add('show');
   document.getElementById('progress-bar').classList.add('show');
   document.getElementById('barkod-ara-wrap').style.display = 'flex';
+  loadIfsCache();
   loadSayimRecords();
 }
 
@@ -380,6 +383,22 @@ function signOut() {
 }
 
 // ── VERİ ─────────────────────────────────────────────────
+async function loadIfsCache() {
+  try {
+    document.getElementById('progress-label').textContent = 'IFS verisi yükleniyor...';
+    var resp = await fetch(API_URL + '?action=getAllIfs');
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    ifsCache = data.records || [];
+    ifsCacheLoaded = true;
+    document.getElementById('progress-label').textContent = ifsCache.length + ' IFS kaydı yüklendi';
+    setTimeout(function() { updateProgress(); }, 1500);
+  } catch(e) {
+    ifsCacheLoaded = false;
+    console.warn('IFS cache yüklenemedi:', e.message);
+  }
+}
+
 async function loadSayimRecords() {
   try {
     var resp = await fetch(API_URL + '?action=getSayimRecords');
@@ -477,27 +496,59 @@ async function skipRecord() {
 async function searchIfs(barcode, textQuery) {
   document.getElementById('ifs-loading').style.display = 'block';
   document.getElementById('ifs-content').innerHTML = '';
+
   try {
-    var url = textQuery
-      ? API_URL + '?action=searchIfsByText&query=' + encodeURIComponent(textQuery)
-      : API_URL + '?action=searchIfsByBarcode&barcode=' + encodeURIComponent(barcode);
-    var resp = await fetch(url);
-    var data = await resp.json();
+    if (ifsCacheLoaded && ifsCache.length > 0) {
+      // Lokal arama — sunucuya gitme
+      ifsResults = searchIfsLocal(barcode, textQuery);
+    } else {
+      // Cache yoksa sunucuya git
+      var url = textQuery
+        ? API_URL + '?action=searchIfsByText&query=' + encodeURIComponent(textQuery)
+        : API_URL + '?action=searchIfsByBarcode&barcode=' + encodeURIComponent(barcode);
+      var resp = await fetch(url);
+      var data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      ifsResults = data.results || [];
+    }
+
     document.getElementById('ifs-loading').style.display = 'none';
-    if (data.error) throw new Error(data.error);
-    ifsResults = data.results || [];
     ifsIndex = 0;
     if (!ifsResults.length) {
       renderIfsNotFound();
     } else {
       renderIfsRecord(0);
-      if (!textQuery && ifsResults.length === 1) attachSelectBtn(0); // tek sonuçta otomatik seç
+      if (!textQuery && ifsResults.length === 1) attachSelectBtn(0);
     }
   } catch(e) {
     document.getElementById('ifs-loading').style.display = 'none';
     document.getElementById('ifs-content').innerHTML =
       '<div class="empty-state">' + esc(e.message) + '</div>';
   }
+}
+
+function searchIfsLocal(barcode, textQuery) {
+  var results = [];
+  for (var i = 0; i < ifsCache.length; i++) {
+    var r = ifsCache[i];
+    // Eşleştirilmiş kayıtları atla
+    if (r.eslesti && String(r.eslesti).trim() !== '') continue;
+
+    if (textQuery) {
+      // Kelime bazlı arama — tüm alanlarda
+      var words = textQuery.trim().toUpperCase().split(/\s+/).filter(function(w) { return w.length > 0; });
+      var searchStr = [r.nesneNo, r.barkod, r.malzemeAdi, r.lokasyonNo, r.lokasyonAdi,
+        r.seriNo, r.marka, r.model, r.malzemeNo, r.tedarikciNo, r.tedarikciAdi,
+        r.imeiNo, r.macNo, r.kategori].join(' ').toUpperCase();
+      var matches = words.every(function(w) { return searchStr.indexOf(w) !== -1; });
+      if (matches) results.push(r);
+    } else if (barcode) {
+      // Barkod araması
+      if (String(r.barkod).trim() === String(barcode).trim()) results.push(r);
+    }
+    if (results.length >= 50) break;
+  }
+  return results;
 }
 
 function renderIfsNotFound() {
