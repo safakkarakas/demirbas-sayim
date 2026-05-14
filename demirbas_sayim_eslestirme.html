@@ -264,7 +264,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.14.05';
+var APP_VERSION = 'v2026.05.14.06';
 var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
 var API_URL = 'https://script.google.com/macros/s/AKfycbyJDic89S2XUJosuRF4-yCBmOnf1UtSFoMDDnQHtuY7--MRAPVbcWcNj7s6RWErn_ga/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
@@ -821,9 +821,11 @@ async function eslestir() {
     if (!data.success) throw new Error(data.error || 'Hata');
     eslenenSayisi++;
     showToast('Eşleştirme kaydedildi', 'green');
-    // Eşleştirilen kaydı hem allRecords hem sayimRecords'dan çıkar
     allRecords = allRecords.filter(function(r) { return r.id !== sr.id; });
     applyFilter();
+    // Butonu her durumda sıfırla
+    btn.disabled = true;
+    btn.textContent = '&#10003; Eşleştir';
     if (!sayimRecords.length) { showEmptyState(); return; }
     if (currentIndex >= sayimRecords.length) currentIndex = 0;
     setTimeout(function() { showRecord(currentIndex); updateProgress(); }, 500);
