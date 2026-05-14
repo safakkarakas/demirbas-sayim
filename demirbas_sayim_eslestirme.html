@@ -264,9 +264,9 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.14.02';
+var APP_VERSION = 'v2026.05.14.03';
 var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
-var API_URL = 'https://script.google.com/macros/s/AKfycbwnW9zd1D31qZlG0yq-cekbRpAsBB_1OqcxTjvOZfH4X0y5plemkyHBf8QLOaWg7YVv/exec';
+var API_URL = 'https://script.google.com/macros/s/AKfycbwqjAN24rAOShmM77RY5UpALssouIOKwsr4LAw3_QI2E_3E-5-S9D29CTGUdCmHRktJ/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
 var currentUser = null;
@@ -392,17 +392,14 @@ async function loadIfsCacheThenRecords() {
 
 async function loadIfsCache() {
   try {
-    document.getElementById('progress-label').textContent = 'IFS verisi yükleniyor...';
-    var resp = await fetch(API_URL + '?action=getAllIfs');
+    document.getElementById('progress-label').textContent = 'IFS barkod listesi yükleniyor...';
+    var resp = await fetch(API_URL + '?action=getIfsBarcodes');
     var data = await resp.json();
     if (data.error) throw new Error(data.error);
-    ifsCache = data.records || [];
-    // Barkod araması için index oluştur
+    ifsCache = data.records || []; // sadece {rowIndex, barkod, eslesti}
     buildIfsBarcodeIndex();
-    // Metin araması için index oluştur
-    buildIfsTextIndex();
     ifsCacheLoaded = true;
-    document.getElementById('progress-label').textContent = ifsCache.length + ' IFS kaydı yüklendi';
+    document.getElementById('progress-label').textContent = ifsCache.length + ' IFS kaydı hazır';
     setTimeout(function() { updateProgress(); }, 1500);
   } catch(e) {
     ifsCacheLoaded = false;
@@ -509,17 +506,26 @@ async function searchIfs(barcode, textQuery) {
   document.getElementById('ifs-content').innerHTML = '';
 
   try {
-    if (ifsCacheLoaded && ifsCache.length > 0) {
-      // Önce prefetch cache'e bak
-      var prefKey = textQuery ? null : String(barcode);
-      if (prefKey && prefetchCache[prefKey] !== undefined) {
-        ifsResults = prefetchCache[prefKey];
-        delete prefetchCache[prefKey]; // kullanıldı, temizle
+    if (!textQuery && ifsCacheLoaded) {
+      // Barkod araması — index ile anında bul, sonra detay çek
+      var prefKey = String(barcode);
+      var localResults = (prefetchCache[prefKey] !== undefined)
+        ? prefetchCache[prefKey]
+        : searchIfsLocal(barcode, '');
+      if (prefetchCache[prefKey] !== undefined) delete prefetchCache[prefKey];
+
+      if (localResults.length > 0) {
+        // Bulunan rowIndex'lerin detaylarını çek
+        var rowIndexes = localResults.map(function(r) { return r.rowIndex; });
+        var detResp = await fetch(API_URL + '?action=getIfsRowDetails&rows=' + rowIndexes.join(','));
+        var detData = await detResp.json();
+        if (detData.error) throw new Error(detData.error);
+        ifsResults = detData.results || [];
       } else {
-        ifsResults = searchIfsLocal(barcode, textQuery);
+        ifsResults = [];
       }
     } else {
-      // Cache yoksa sunucuya git
+      // Metin araması — sunucuya git
       var url = textQuery
         ? API_URL + '?action=searchIfsByText&query=' + encodeURIComponent(textQuery)
         : API_URL + '?action=searchIfsByBarcode&barcode=' + encodeURIComponent(barcode);
@@ -588,53 +594,17 @@ function prefetchNext() {
 }
 
 function searchIfsLocal(barcode, textQuery) {
+  // Sadece barkod araması — index ile anında
+  if (!barcode || textQuery) return [];
+  var bKey = String(barcode).trim();
+  var idxs = ifsBarcodeIndex[bKey] || [];
   var results = [];
-
-  if (textQuery) {
-    // Kelime index araması
-    var words = textQuery.trim().toUpperCase().split(/[^A-Z0-9]+/).filter(function(w) { return w.length >= 2; });
-    if (!words.length) return results;
-
-    var candidateSet = null;
-    for (var wi = 0; wi < words.length; wi++) {
-      var w = words[wi];
-      var matchSet = {};
-      var keys = Object.keys(ifsTextIndex);
-      for (var ki = 0; ki < keys.length; ki++) {
-        if (keys[ki].indexOf(w) === 0) {
-          var arr = ifsTextIndex[keys[ki]];
-          for (var ai = 0; ai < arr.length; ai++) matchSet[arr[ai]] = true;
-        }
-      }
-      if (candidateSet === null) {
-        candidateSet = matchSet;
-      } else {
-        var newSet = {};
-        var cKeys = Object.keys(candidateSet);
-        for (var ci = 0; ci < cKeys.length; ci++) {
-          if (matchSet[cKeys[ci]]) newSet[cKeys[ci]] = true;
-        }
-        candidateSet = newSet;
-      }
-      if (!candidateSet || Object.keys(candidateSet).length === 0) return results;
-    }
-
-    var idxList = Object.keys(candidateSet);
-    for (var ii = 0; ii < idxList.length; ii++) {
-      var r = ifsCache[parseInt(idxList[ii])];
-      if (r && !(r.eslesti && String(r.eslesti).trim() !== '')) results.push(r);
-    }
-
-  } else if (barcode) {
-    // Barkod index araması — O(1)
-    var bKey = String(barcode).trim();
-    var idxs = ifsBarcodeIndex[bKey] || [];
-    for (var bi = 0; bi < idxs.length; bi++) {
-      var rec = ifsCache[idxs[bi]];
-      if (rec && !(rec.eslesti && String(rec.eslesti).trim() !== '')) results.push(rec);
+  for (var bi = 0; bi < idxs.length; bi++) {
+    var rec = ifsCache[idxs[bi]];
+    if (rec && !(rec.eslesti && String(rec.eslesti).trim() !== '')) {
+      results.push(rec); // sadece rowIndex ve barkod var, detay sonra gelecek
     }
   }
-
   return results;
 }
 
