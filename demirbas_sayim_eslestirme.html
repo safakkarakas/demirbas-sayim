@@ -147,6 +147,8 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 .toast.warn { background:var(--orange); }
 .toast.err { background:var(--accent); }
 .empty-state { padding:2rem; text-align:center; color:var(--text3); font-family:var(--mono); font-size:12px; }
+.lock-warning { display:none; background:rgba(224,123,0,0.1); border:1px solid rgba(224,123,0,0.3); border-radius:var(--radius-sm); padding:8px 12px; font-size:11px; font-family:var(--mono); color:var(--orange); margin-bottom:8px; }
+.lock-warning.show { display:block; }
 .ifs-list-num { font-size:10px; font-family:var(--mono); color:var(--text3); margin-right:6px; flex-shrink:0; min-width:20px; }
 .ifs-list-item { display:flex; align-items:flex-start; padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--border); transition:background 0.12s; }
 .ifs-list-item:last-child { border-bottom:none; }
@@ -254,6 +256,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
   </div>
 </div>
 
+<div class="lock-warning" id="lock-warning"></div>
 <div class="action-footer" id="action-footer">
   <button class="btn-next" onclick="nextRecord()">&#9197; Sonraki</button>
   <button class="btn-skip" onclick="skipRecord()">&#10006; Atla</button>
@@ -264,9 +267,9 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.14.08';
+var APP_VERSION = 'v2026.05.14.09';
 var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
-var API_URL = 'https://script.google.com/macros/s/AKfycbyJDic89S2XUJosuRF4-yCBmOnf1UtSFoMDDnQHtuY7--MRAPVbcWcNj7s6RWErn_ga/exec';
+var API_URL = 'https://script.google.com/macros/s/AKfycbyrvHa9I9OCw5_NwgBYmgUTw-Rd_RcH-Dlt8Fjq4VZgrAqzcYOReJwKr8GWWWh1HXXk/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
 var currentUser = null;
@@ -279,6 +282,10 @@ var selectedIfsRecord = null;
 var ifsCache = [];        // IFS verisi bellekte saklanır
 var ifsCacheLoaded = false;
 var prefetchCache = {};   // sonraki kayıt için ön yüklenmiş sonuçlar
+var currentLockId = null;  // şu an kilitli kaydın id'si
+var lockRenewTimer = null; // kilit yenileme zamanlayıcısı
+var lockCheckTimer = null; // kilit kontrol zamanlayıcısı
+var LOCK_TIMEOUT_MS = 10 * 60 * 1000; // 10 dakika
 var ifsBarcodeIndex = {}; // barkod → kayıt listesi
 var ifsTextIndex = {};    // kelime → satır indexleri
 var atlandiSayisi = 0;    // sunucudan gelen atlanmış kayıt sayısı
@@ -482,6 +489,7 @@ async function showRecord(idx) {
 
 // ── ATLA ─────────────────────────────────────────────────
 async function skipRecord() {
+  await unlockCurrent();
   if (!sayimRecords.length) return;
   var r = sayimRecords[currentIndex];
   // Sunucuya atla isteği gönder
@@ -744,6 +752,116 @@ function selectIfsRecord(idx) {
   showToast('IFS kayd\u0131 se\u00e7ildi', 'green');
 }
 
+// ── KİLİT YÖNETİMİ ──────────────────────────────────────
+
+async function lockRecord(recordId, rowIndex) {
+  if (currentLockId === recordId) return; // zaten kilitli
+  await unlockCurrent(); // önceki kilidi aç
+  try {
+    await fetch(API_URL, {
+      method: 'POST', redirect: 'follow',
+      body: JSON.stringify({
+        action: 'lockRecord',
+        recordId: recordId,
+        rowIndex: rowIndex,
+        userEmail: currentUser ? currentUser.email : '',
+        userName: currentUser ? currentUser.name : ''
+      })
+    });
+    currentLockId = recordId;
+    startLockRenew(recordId, rowIndex);
+    startLockCheck(recordId, rowIndex);
+  } catch(e) { console.warn('Kilit koyulamadı:', e); }
+}
+
+async function unlockCurrent() {
+  if (!currentLockId) return;
+  var id = currentLockId;
+  currentLockId = null;
+  stopLockTimers();
+  hideLockWarning();
+  try {
+    await fetch(API_URL, {
+      method: 'POST', redirect: 'follow',
+      body: JSON.stringify({
+        action: 'unlockRecord',
+        recordId: id,
+        userEmail: currentUser ? currentUser.email : ''
+      })
+    });
+  } catch(e) { console.warn('Kilit açılamadı:', e); }
+}
+
+function unlockCurrentSync() {
+  // Sayfa kapanırken sendBeacon ile
+  if (!currentLockId) return;
+  var id = currentLockId;
+  currentLockId = null;
+  stopLockTimers();
+  var data = JSON.stringify({
+    action: 'unlockRecord',
+    recordId: id,
+    userEmail: currentUser ? currentUser.email : ''
+  });
+  if (navigator.sendBeacon) {
+    var blob = new Blob([data], { type: 'application/json' });
+    navigator.sendBeacon(API_URL, blob);
+  }
+}
+
+function startLockRenew(recordId, rowIndex) {
+  stopLockTimers();
+  // Her 2 dakikada bir kilidi yenile
+  lockRenewTimer = setInterval(function() {
+    if (currentLockId !== recordId) return;
+    fetch(API_URL, {
+      method: 'POST', redirect: 'follow',
+      body: JSON.stringify({
+        action: 'renewLock',
+        recordId: recordId,
+        rowIndex: rowIndex,
+        userEmail: currentUser ? currentUser.email : ''
+      })
+    }).catch(function(){});
+  }, 2 * 60 * 1000);
+}
+
+function startLockCheck(recordId, rowIndex) {
+  // Her 15 saniyede bir kilidi kontrol et
+  lockCheckTimer = setInterval(async function() {
+    if (currentLockId !== recordId) return;
+    try {
+      var resp = await fetch(API_URL + '?action=checkLock&recordId=' + encodeURIComponent(recordId));
+      var data = await resp.json();
+      if (data.lockedBy && data.lockedBy !== (currentUser ? currentUser.email : '')) {
+        // Başka biri almış — uyarı göster, butonları pasif et
+        showLockWarning(data.lockedBy, data.lockedByName);
+        currentLockId = null;
+        stopLockTimers();
+      }
+    } catch(e) {}
+  }, 15 * 1000);
+}
+
+function stopLockTimers() {
+  if (lockRenewTimer) { clearInterval(lockRenewTimer); lockRenewTimer = null; }
+  if (lockCheckTimer) { clearInterval(lockCheckTimer); lockCheckTimer = null; }
+}
+
+function showLockWarning(email, name) {
+  var el = document.getElementById('lock-warning');
+  el.textContent = '⚠ Bu kayıt ' + (name || email) + ' tarafından alındı. Sadece Sonraki tuşu çalışır.';
+  el.classList.add('show');
+  document.getElementById('btn-match').disabled = true;
+  document.getElementById('btn-skip').disabled = true;
+}
+
+function hideLockWarning() {
+  var el = document.getElementById('lock-warning');
+  if (el) { el.classList.remove('show'); }
+  document.getElementById('btn-skip').disabled = false;
+}
+
 function doManualSearch() {
   var inp = document.getElementById('ifs-search-input');
   if (inp && inp.value.trim()) searchIfs('', inp.value.trim());
@@ -820,6 +938,7 @@ async function eslestir() {
     var data = await resp.json();
     if (!data.success) throw new Error(data.error || 'Hata');
     eslenenSayisi++;
+    currentLockId = null; stopLockTimers(); hideLockWarning();
     showToast('Eşleştirme kaydedildi', 'green');
     allRecords = allRecords.filter(function(r) { return r.id !== sr.id; });
     applyFilter();
@@ -836,7 +955,8 @@ async function eslestir() {
   }
 }
 
-function nextRecord() {
+async function nextRecord() {
+  await unlockCurrent();
   if (!sayimRecords.length) return;
   showRecord((currentIndex + 1) % sayimRecords.length);
 }
@@ -868,6 +988,11 @@ function showToast(msg, type) {
   t.classList.add('show'); clearTimeout(toastTimer);
   toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2800);
 }
+
+// Sayfa kapanınca kilidi aç
+window.addEventListener('beforeunload', function() {
+  unlockCurrentSync();
+});
 
 // Başlangıç
 (function() {
