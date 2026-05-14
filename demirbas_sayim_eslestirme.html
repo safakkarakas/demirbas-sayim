@@ -264,9 +264,9 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.14.04';
+var APP_VERSION = 'v2026.05.14.05';
 var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
-var API_URL = 'https://script.google.com/macros/s/AKfycbxU0MT81zHA1U4N09Zi2bPeWxqm06BY5tt2iX3DVI4vTYrBloWPnOLO4ms9mJpclBka/exec';
+var API_URL = 'https://script.google.com/macros/s/AKfycbyJDic89S2XUJosuRF4-yCBmOnf1UtSFoMDDnQHtuY7--MRAPVbcWcNj7s6RWErn_ga/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
 
 var currentUser = null;
@@ -386,8 +386,10 @@ function signOut() {
 
 // ── VERİ ─────────────────────────────────────────────────
 async function loadIfsCacheThenRecords() {
-  await loadIfsCache();   // önce IFS cache yükle
-  await loadSayimRecords(); // sonra sayım kayıtları
+  // Apps Script'i ısıt — cold start'ı öne al
+  fetch(API_URL + '?action=ping').catch(function(){});
+  await loadIfsCache();
+  await loadSayimRecords();
 }
 
 async function loadIfsCache() {
