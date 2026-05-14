@@ -264,7 +264,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.14.01';
+var APP_VERSION = 'v2026.05.14.02';
 var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
 var API_URL = 'https://script.google.com/macros/s/AKfycbwnW9zd1D31qZlG0yq-cekbRpAsBB_1OqcxTjvOZfH4X0y5plemkyHBf8QLOaWg7YVv/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
@@ -374,8 +374,7 @@ function onLoginSuccess() {
   document.getElementById('action-footer').classList.add('show');
   document.getElementById('progress-bar').classList.add('show');
   document.getElementById('barkod-ara-wrap').style.display = 'flex';
-  loadIfsCache();
-  loadSayimRecords();
+  loadIfsCacheThenRecords();
 }
 
 function signOut() {
@@ -386,6 +385,11 @@ function signOut() {
 }
 
 // ── VERİ ─────────────────────────────────────────────────
+async function loadIfsCacheThenRecords() {
+  await loadIfsCache();   // önce IFS cache yükle
+  await loadSayimRecords(); // sonra sayım kayıtları
+}
+
 async function loadIfsCache() {
   try {
     document.getElementById('progress-label').textContent = 'IFS verisi yükleniyor...';
@@ -503,15 +507,6 @@ async function skipRecord() {
 async function searchIfs(barcode, textQuery) {
   document.getElementById('ifs-loading').style.display = 'block';
   document.getElementById('ifs-content').innerHTML = '';
-
-  // Cache yüklenmediyse beklet (max 30sn)
-  if (!ifsCacheLoaded) {
-    var waited = 0;
-    while (!ifsCacheLoaded && waited < 30000) {
-      await new Promise(function(r) { setTimeout(r, 300); });
-      waited += 300;
-    }
-  }
 
   try {
     if (ifsCacheLoaded && ifsCache.length > 0) {
