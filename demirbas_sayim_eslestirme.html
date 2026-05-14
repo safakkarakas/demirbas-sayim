@@ -259,7 +259,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 <div class="lock-warning" id="lock-warning"></div>
 <div class="action-footer" id="action-footer">
   <button class="btn-next" onclick="nextRecord()">&#9197; Sonraki</button>
-  <button class="btn-skip" onclick="skipRecord()">&#10006; Atla</button>
+  <button class="btn-skip" id="btn-skip" onclick="skipRecord()">&#10006; Atla</button>
   <button class="btn-match" id="btn-match" onclick="eslestir()" disabled>&#10003; Eşleştir</button>
 </div>
 
@@ -267,7 +267,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.14.09';
+var APP_VERSION = 'v2026.05.14.10';
 var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
 var API_URL = 'https://script.google.com/macros/s/AKfycbyrvHa9I9OCw5_NwgBYmgUTw-Rd_RcH-Dlt8Fjq4VZgrAqzcYOReJwKr8GWWWh1HXXk/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
@@ -448,7 +448,8 @@ function showEmptyState() {
     '<div class="empty-state"><div class="empty-icon">&#10003;</div>Eşleştirilecek kayıt kalmadı</div>';
   document.getElementById('ifs-content').innerHTML = '';
   document.getElementById('photo-wrap').innerHTML = '<div class="photo-empty">&#10003;</div>';
-  document.getElementById('btn-match').disabled = true;
+  var bm0 = document.getElementById('btn-match');
+  if (bm0) bm0.disabled = true;
   updateProgress();
 }
 
@@ -482,7 +483,8 @@ async function showRecord(idx) {
 
   document.getElementById('sayim-status').innerHTML = '';
   selectedIfsRecord = null;
-  document.getElementById('btn-match').disabled = true;
+  var bm1 = document.getElementById('btn-match');
+  if (bm1) bm1.disabled = true;
   await searchIfs(r.barkod, '');
   updateProgress();
 }
@@ -634,7 +636,8 @@ function renderIfsNotFound() {
     '</div>';
   var inp = document.getElementById('ifs-search-input');
   if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') doManualSearch(); });
-  document.getElementById('btn-match').disabled = true;
+  var bm2 = document.getElementById('btn-match');
+  if (bm2) bm2.disabled = true;
 }
 
 function renderIfsRecord(idx) {
@@ -744,7 +747,8 @@ function attachSelectBtn(idx) {
 
 function selectIfsRecord(idx) {
   selectedIfsRecord = ifsResults[idx];
-  document.getElementById('btn-match').disabled = false;
+  var bm = document.getElementById('btn-match');
+  if (bm) bm.disabled = false;
   var b = document.getElementById('btn-select-ifs');
   if (b) { b.textContent = '\u2705 Se\u00e7ildi'; b.classList.add('selected'); }
   document.getElementById('sayim-status').innerHTML =
@@ -850,16 +854,20 @@ function stopLockTimers() {
 
 function showLockWarning(email, name) {
   var el = document.getElementById('lock-warning');
+  if (!el) return;
   el.textContent = '⚠ Bu kayıt ' + (name || email) + ' tarafından alındı. Sadece Sonraki tuşu çalışır.';
   el.classList.add('show');
-  document.getElementById('btn-match').disabled = true;
-  document.getElementById('btn-skip').disabled = true;
+  var bm = document.getElementById('btn-match');
+  var bs = document.getElementById('btn-skip');
+  if (bm) bm.disabled = true;
+  if (bs) bs.disabled = true;
 }
 
 function hideLockWarning() {
   var el = document.getElementById('lock-warning');
-  if (el) { el.classList.remove('show'); }
-  document.getElementById('btn-skip').disabled = false;
+  if (el) el.classList.remove('show');
+  var skip = document.getElementById('btn-skip');
+  if (skip) skip.disabled = false;
 }
 
 function doManualSearch() {
@@ -908,7 +916,8 @@ async function araByBarkod() {
     document.getElementById('photo-filename').textContent = r.fotoDosya || '—';
     document.getElementById('photo-info').textContent = (r.tarih||'') + ' ' + (r.saat||'') + '  •  ' + (r.kullanici||'');
     selectedIfsRecord = null;
-    document.getElementById('btn-match').disabled = true;
+    var bm3 = document.getElementById('btn-match');
+    if (bm3) bm3.disabled = true;
     document.getElementById('sayim-status').innerHTML = '';
     await searchIfs(String(r.barkod), '');
     showToast('Sayım kaydı yüklendi', 'green');
@@ -919,7 +928,7 @@ async function araByBarkod() {
 async function eslestir() {
   if (!selectedIfsRecord) { showToast('Önce bir IFS kaydı seçin', 'warn'); return; }
   var btn = document.getElementById('btn-match');
-  if (btn.disabled) return;
+  if (!btn || btn.disabled) return;
   btn.disabled = true;
   btn.textContent = '⏳ Kaydediliyor...';
   var sr = sayimRecords[currentIndex];
