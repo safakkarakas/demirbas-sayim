@@ -264,7 +264,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.14.07';
+var APP_VERSION = 'v2026.05.14.08';
 var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
 var API_URL = 'https://script.google.com/macros/s/AKfycbyJDic89S2XUJosuRF4-yCBmOnf1UtSFoMDDnQHtuY7--MRAPVbcWcNj7s6RWErn_ga/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
@@ -386,10 +386,10 @@ function signOut() {
 
 // ── VERİ ─────────────────────────────────────────────────
 async function loadIfsCacheThenRecords() {
-  // Apps Script'i ısıt — cold start'ı öne al
+  // Ping ile ısıt, 800ms bekle, sonra paralel yükle
   fetch(API_URL + '?action=ping').catch(function(){});
-  await loadIfsCache();
-  await loadSayimRecords();
+  await new Promise(function(r) { setTimeout(r, 800); });
+  await Promise.all([loadIfsCache(), loadSayimRecords()]);
 }
 
 async function loadIfsCache() {
