@@ -267,7 +267,7 @@ header { background:var(--surface); border-bottom:2px solid var(--accent); paddi
 
 <script>
 var GOOGLE_CLIENT_ID = '95179199883-mmb1cusrb81vcm0lqiun7gr55sihu428.apps.googleusercontent.com';
-var APP_VERSION = 'v2026.05.14.13';
+var APP_VERSION = 'v2026.05.15.01';
 var ALLOWED_EMAILS = ['safakkarakas@gmail.com', 'kibaromerfaruk5@gmail.com', 'hemreacarx@gmail.com'];
 var API_URL = 'https://script.google.com/macros/s/AKfycbxWaibOGs_k-CHxQsMfAeK6hpHc3evcD1BreYq6v8UW183BMZ82114CiPnpWsrP2MMf/exec';
 // Atlama sunucu tarafında Sayım sekmesinde saklanır
@@ -401,14 +401,16 @@ async function loadIfsCacheThenRecords() {
 
 async function loadIfsCache() {
   try {
-    document.getElementById('progress-label').textContent = 'IFS barkod listesi yükleniyor...';
+    var pl = document.getElementById('progress-label');
+    if (pl) pl.textContent = 'IFS barkod listesi yükleniyor...';
     var resp = await fetch(API_URL + '?action=getIfsBarcodes');
     var data = await resp.json();
     if (data.error) throw new Error(data.error);
     ifsCache = data.records || []; // sadece {rowIndex, barkod, eslesti}
     buildIfsBarcodeIndex();
     ifsCacheLoaded = true;
-    document.getElementById('progress-label').textContent = ifsCache.length + ' IFS kaydı hazır';
+    var pl2 = document.getElementById('progress-label');
+    if (pl2) pl2.textContent = ifsCache.length + ' IFS kaydı hazır';
     setTimeout(function() { updateProgress(); }, 1500);
   } catch(e) {
     ifsCacheLoaded = false;
